@@ -35,7 +35,7 @@ export default function QuestionForm({ onSubmit, isSubmitting }: QuestionFormPro
         <textarea
           id="question"
           className="input"
-          placeholder="Submit any question that benefits from multiple expert perspectives — strategy, risk, investment decisions, operational trade-offs…"
+          placeholder="Submit any question that benefits from multiple expert perspectives: strategy, risk, investment decisions, operational trade-offs…"
           value={question}
           onChange={e => setQuestion(e.target.value)}
           rows={3}

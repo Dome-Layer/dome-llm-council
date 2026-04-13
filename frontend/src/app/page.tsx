@@ -15,7 +15,7 @@ type MemberId = typeof MEMBER_ORDER[number]
 const MEMBER_DISPLAY: Record<MemberId, { displayName: string; defaultRole: string }> = {
   claude: { displayName: 'Claude',  defaultRole: 'Strategic Advisor' },
   gemini: { displayName: 'Gemini',  defaultRole: 'Research Analyst' },
-  openai: { displayName: 'GPT-4o', defaultRole: 'Critical Advisor' },
+  openai: { displayName: 'Chat-GPT', defaultRole: 'Critical Advisor' },
 }
 
 // ─── State types ──────────────────────────────────────────────────
@@ -236,7 +236,7 @@ export default function Page() {
               lineHeight: 1.2,
             }}
           >
-            Convene the Panel
+            Ask the Panel
           </h1>
           <p
             style={{
@@ -247,7 +247,7 @@ export default function Page() {
               maxWidth: '55ch',
             }}
           >
-            Three AI advisors deliberate independently, then cross-examine each other — producing a governed verdict with a confidence score and full audit trail.
+            Three AI advisors deliberate independently, then cross-examine each other producing a governed verdict with a confidence score and full audit trail.
           </p>
         </div>
 
