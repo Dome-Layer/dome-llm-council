@@ -15,18 +15,50 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message
 logger = logging.getLogger(__name__)
 
 
+# Columns that exist in the governance_events table.
+# The SSE payload includes extra keys (e.g. "type") that must be stripped before insert.
+_GOVERNANCE_EVENT_COLUMNS = {
+    "agent_id", "action_type", "timestamp", "input_hash", "input_type",
+    "output_summary", "rules_applied", "rules_triggered", "confidence",
+    "human_in_loop", "user_id", "metadata",
+}
+
+_db_client = None
+
+
+def _get_db_client(config: CouncilConfig):
+    """Return a cached Supabase client, or None if not configured."""
+    global _db_client
+    if _db_client is not None:
+        return _db_client
+    if not config.supabase_url or not config.supabase_service_role_key:
+        return None
+    try:
+        from supabase import create_client
+        _db_client = create_client(config.supabase_url, config.supabase_service_role_key)
+        return _db_client
+    except Exception as exc:
+        logger.warning("supabase_client_init_failed error=%s", exc)
+        return None
+
+
 def _persist_governance_event(config: CouncilConfig, event_dict: dict) -> None:
     """Optionally write a governance event to the shared DOME Platform Supabase project.
 
     Non-fatal — a failure here must never interrupt the SSE stream. The tool
     works without Supabase; persistence is purely for the audit trail.
     """
-    if not config.supabase_url or not config.supabase_service_role_key:
+    db = _get_db_client(config)
+    if db is None:
         return
     try:
-        from supabase import create_client
-        db = create_client(config.supabase_url, config.supabase_service_role_key)
-        db.table("governance_events").insert(event_dict).execute()
+        # Strip SSE envelope keys not present in the table (e.g. "type")
+        row = {k: v for k, v in event_dict.items() if k in _GOVERNANCE_EVENT_COLUMNS}
+        # Omit null user_id to let the column default to NULL cleanly
+        if row.get("user_id") is None:
+            row.pop("user_id", None)
+        db.table("governance_events").insert(row).execute()
+        logger.info("governance_event_persisted")
     except Exception as exc:
         logger.warning("governance_persist_failed error=%s", exc)
 
