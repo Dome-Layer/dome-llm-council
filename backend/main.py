@@ -1,10 +1,13 @@
 import json
 import logging
+import uuid
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from typing import AsyncGenerator, Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
 from config import CouncilConfig, build_council_config
@@ -79,7 +82,7 @@ app = FastAPI(title="Dome LLM Council", version="1.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -140,3 +143,112 @@ async def deliberate(body: DeliberationRequest, req: Request) -> EventSourceResp
             yield {"data": json.dumps({"type": "error", "data": {"message": str(exc)}})}
 
     return EventSourceResponse(_stream())
+
+
+# ─── Auth endpoints ──────────────────────────────────────────────────────────
+
+class MagicLinkRequest(BaseModel):
+    email: str
+
+
+@app.post("/api/v1/auth/magic-link", status_code=204)
+async def request_magic_link(body: MagicLinkRequest):
+    if _config is None or not _config.supabase_url or not _config.supabase_service_role_key:
+        raise HTTPException(status_code=503, detail="Auth not configured")
+    try:
+        from supabase import create_client
+        db = create_client(_config.supabase_url, _config.supabase_service_role_key)
+        db.auth.admin.generate_link({"type": "magiclink", "email": body.email})
+    except Exception as exc:
+        logger.error("magic_link_failed error=%s", exc)
+        raise HTTPException(status_code=500, detail="Failed to send magic link")
+
+
+@app.delete("/api/v1/auth/session", status_code=204)
+async def delete_session(req: Request):
+    user_id = _extract_user_id(_config, req) if _config else None
+    if user_id and _config:
+        try:
+            db = _get_db_client(_config)
+            if db:
+                db.auth.admin.delete_user(user_id)
+        except Exception:
+            pass  # best-effort
+
+
+# ─── Saved deliberations ─────────────────────────────────────────────────────
+
+class SaveDeliberationRequest(BaseModel):
+    question: str
+    verdict_summary: str
+    consensus_confidence: float
+    label: Optional[str] = None
+
+
+@app.post("/api/v1/deliberations/{deliberation_id}/save")
+async def save_deliberation(deliberation_id: str, body: SaveDeliberationRequest, req: Request):
+    if _config is None:
+        raise HTTPException(status_code=503, detail="Council not initialised")
+    user_id = _extract_user_id(_config, req)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    db = _get_db_client(_config)
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not configured")
+    try:
+        now = datetime.now(timezone.utc).isoformat()
+        row = {
+            "deliberation_id": deliberation_id,
+            "user_id": user_id,
+            "question": body.question,
+            "verdict_summary": body.verdict_summary,
+            "consensus_confidence": body.consensus_confidence,
+            "label": body.label,
+            "saved_at": now,
+        }
+        db.table("deliberations").insert(row).execute()
+        return {"saved": True, "saved_at": now}
+    except Exception as exc:
+        logger.error("save_deliberation_failed error=%s", exc)
+        raise HTTPException(status_code=500, detail="Failed to save deliberation")
+
+
+@app.get("/api/v1/deliberations")
+async def list_deliberations(req: Request):
+    if _config is None:
+        raise HTTPException(status_code=503, detail="Council not initialised")
+    user_id = _extract_user_id(_config, req)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    db = _get_db_client(_config)
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not configured")
+    try:
+        result = (
+            db.table("deliberations")
+            .select("*")
+            .eq("user_id", user_id)
+            .order("saved_at", desc=True)
+            .execute()
+        )
+        return {"deliberations": result.data}
+    except Exception as exc:
+        logger.error("list_deliberations_failed error=%s", exc)
+        raise HTTPException(status_code=500, detail="Failed to list deliberations")
+
+
+@app.delete("/api/v1/deliberations/{deliberation_id}", status_code=204)
+async def delete_deliberation_endpoint(deliberation_id: str, req: Request):
+    if _config is None:
+        raise HTTPException(status_code=503, detail="Council not initialised")
+    user_id = _extract_user_id(_config, req)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    db = _get_db_client(_config)
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not configured")
+    try:
+        db.table("deliberations").delete().eq("id", deliberation_id).eq("user_id", user_id).execute()
+    except Exception as exc:
+        logger.error("delete_deliberation_failed error=%s", exc)
+        raise HTTPException(status_code=500, detail="Failed to delete deliberation")
