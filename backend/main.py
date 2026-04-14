@@ -158,7 +158,7 @@ async def request_magic_link(body: MagicLinkRequest):
     try:
         from supabase import create_client
         db = create_client(_config.supabase_url, _config.supabase_service_role_key)
-        db.auth.admin.generate_link({"type": "magiclink", "email": body.email})
+        db.auth.sign_in_with_otp({"email": body.email})
     except Exception as exc:
         logger.error("magic_link_failed error=%s", exc)
         raise HTTPException(status_code=500, detail="Failed to send magic link")

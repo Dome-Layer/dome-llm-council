@@ -22,7 +22,7 @@ interface CouncilCardProps {
 const THINKING_MESSAGES: Record<string, string> = {
   'Claude':  'The Strategic Advisor is weighing long-term implications…',
   'Gemini':  'The Research Analyst is structuring the evidence…',
-  'GPT-4o':  'The Critical Advisor is stress-testing assumptions…',
+  'Chat-GPT':  'The Critical Advisor is stress-testing assumptions…',
 }
 
 const RESPONSE_MAX_HEIGHT = 200
