@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { listDeliberations, deleteDeliberation, type DeliberationSummary } from "@/lib/api";
+import ConfidenceBar from "@/app/components/ConfidenceBar";
 
 function ConfidenceBadge({ value }: { value: number }) {
   const pct = Math.round(value * 100);
@@ -30,6 +31,20 @@ function DeliberationRow({
 }) {
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const closeModal = useCallback(() => setModalOpen(false), []);
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeModal(); };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [modalOpen, closeModal]);
 
   async function handleDelete() {
     if (!confirmDelete) {
@@ -53,82 +68,176 @@ function DeliberationRow({
   });
 
   return (
-    <div style={{
-      display: "flex",
-      flexDirection: "column",
-      gap: "12px",
-      padding: "16px",
-      borderBottom: "0.5px solid var(--color-border-subtle)",
-    }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px" }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {item.label && (
-            <p style={{ fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", marginBottom: "2px" }}>
-              {item.label}
+    <>
+      <div style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+        padding: "16px",
+        borderBottom: "0.5px solid var(--color-border-subtle)",
+      }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {item.label && (
+              <p style={{ fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", marginBottom: "2px" }}>
+                {item.label}
+              </p>
+            )}
+            <p style={{
+              fontSize: "var(--text-body-sm)",
+              fontWeight: 600,
+              color: "var(--color-text-primary)",
+              marginBottom: "4px",
+              overflow: "hidden",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+            }}>
+              {item.question}
             </p>
-          )}
-          <p style={{
-            fontSize: "var(--text-body-sm)",
-            fontWeight: 600,
-            color: "var(--color-text-primary)",
-            marginBottom: "4px",
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              <ConfidenceBadge value={item.consensus_confidence} />
+              <span style={{ fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
+                {savedAt}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+            <button
+              onClick={() => setModalOpen(true)}
+              className="btn btn-neutral"
+              style={{ padding: "6px 12px", fontSize: "var(--text-caption)" }}
+            >
+              View
+            </button>
+
+            {confirmDelete ? (
+              <>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="btn btn-primary"
+                  style={{ padding: "6px 12px", fontSize: "var(--text-caption)" }}
+                >
+                  {deleting ? "Deleting…" : "Confirm"}
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="btn btn-neutral"
+                  style={{ padding: "6px 12px", fontSize: "var(--text-caption)" }}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleDelete}
+                className="btn btn-neutral"
+                style={{ padding: "6px 12px", fontSize: "var(--text-caption)" }}
+              >
+                Delete
+              </button>
+            )}
+          </div>
+        </div>
+
+        {item.verdict_summary && (
+          <p className="prose-compact" style={{
             overflow: "hidden",
             display: "-webkit-box",
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
           }}>
-            {item.question}
+            {item.verdict_summary}
           </p>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-            <ConfidenceBadge value={item.consensus_confidence} />
-            <span style={{ fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)" }}>
-              {savedAt}
-            </span>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-          {confirmDelete ? (
-            <>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="btn btn-primary"
-                style={{ padding: "6px 12px", fontSize: "var(--text-caption)" }}
-              >
-                {deleting ? "Deleting…" : "Confirm"}
-              </button>
-              <button
-                onClick={() => setConfirmDelete(false)}
-                className="btn btn-neutral"
-                style={{ padding: "6px 12px", fontSize: "var(--text-caption)" }}
-              >
-                Cancel
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={handleDelete}
-              className="btn btn-neutral"
-              style={{ padding: "6px 12px", fontSize: "var(--text-caption)" }}
-            >
-              Delete
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
-      {item.verdict_summary && (
-        <p className="prose-compact" style={{
-          overflow: "hidden",
-          display: "-webkit-box",
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: "vertical",
-        }}>
-          {item.verdict_summary}
-        </p>
+      {/* ── Detail modal ─────────────────────────────────────────────── */}
+      {modalOpen && (
+        <div className="response-modal-backdrop" onClick={closeModal}>
+          <div className="response-modal" onClick={(e) => e.stopPropagation()}>
+
+            {/* Modal header */}
+            <div className="response-modal-header">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p className="eyebrow" style={{ marginBottom: 4 }}>Panel verdict</p>
+                <p style={{
+                  fontSize: "var(--text-body-sm)",
+                  fontWeight: 600,
+                  color: "var(--color-text-primary)",
+                  margin: 0,
+                  overflow: "hidden",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                }}>
+                  {item.question}
+                </p>
+              </div>
+              <button
+                onClick={closeModal}
+                aria-label="Close"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 32,
+                  height: 32,
+                  borderRadius: "var(--radius-md)",
+                  border: "0.5px solid var(--color-border-default)",
+                  background: "transparent",
+                  color: "var(--color-text-secondary)",
+                  cursor: "pointer",
+                  fontSize: 20,
+                  lineHeight: 1,
+                  flexShrink: 0,
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal body — full verdict text */}
+            <div className="prose response-modal-body">
+              <p style={{
+                fontSize: "var(--text-body-sm)",
+                color: "var(--color-text-secondary)",
+                lineHeight: 1.7,
+                margin: 0,
+                whiteSpace: "pre-wrap",
+              }}>
+                {item.verdict_summary}
+              </p>
+            </div>
+
+            {/* Modal footer — confidence + date */}
+            <div className="response-modal-footer">
+              <p style={{
+                fontSize: "var(--text-caption)",
+                color: "var(--color-text-tertiary)",
+                fontWeight: 500,
+                margin: "0 0 6px",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+              }}>
+                Consensus confidence
+              </p>
+              <ConfidenceBar value={item.consensus_confidence} />
+              <p style={{
+                fontSize: "var(--text-caption)",
+                color: "var(--color-text-tertiary)",
+                marginTop: "10px",
+                marginBottom: 0,
+              }}>
+                Saved {savedAt}
+              </p>
+            </div>
+          </div>
+        </div>
       )}
-    </div>
+    </>
   );
 }
 
