@@ -224,13 +224,13 @@ export default function Page() {
       }}
     >
         {/* Page title */}
-        <div>
-          <p className="eyebrow" style={{ marginBottom: 8 }}>Multi-model deliberation</p>
+        <div style={{ marginBottom: 'var(--space-2)' }}>
+          <p className="eyebrow" style={{ marginBottom: 12 }}>Multi-model deliberation</p>
           <h1
             style={{
-              fontSize: 'var(--text-h2)',
+              fontSize: 'var(--text-h1)',
               fontWeight: 700,
-              letterSpacing: '-0.02em',
+              letterSpacing: '-0.025em',
               color: 'var(--color-text-primary)',
               margin: 0,
               lineHeight: 1.2,
@@ -240,11 +240,12 @@ export default function Page() {
           </h1>
           <p
             style={{
-              fontSize: 'var(--text-body-sm)',
+              fontSize: 'var(--text-body)',
               color: 'var(--color-text-secondary)',
-              marginTop: 8,
+              marginTop: 12,
               marginBottom: 0,
-              maxWidth: '55ch',
+              maxWidth: '36rem',
+              lineHeight: 1.625,
             }}
           >
             Three AI advisors deliberate independently, then cross-examine each other producing a governed verdict with a confidence score and full audit trail.

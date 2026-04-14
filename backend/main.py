@@ -149,16 +149,28 @@ async def deliberate(body: DeliberationRequest, req: Request) -> EventSourceResp
 
 class MagicLinkRequest(BaseModel):
     email: str
+    redirect_to: Optional[str] = None
+
+
+def _is_allowed_redirect(url: str) -> bool:
+    """Accept only domelayer.com subdomains and localhost (dev)."""
+    import re
+    return bool(re.match(r"^https?://(localhost(:\d+)?|[\w-]+\.domelayer\.com)/", url))
 
 
 @app.post("/api/v1/auth/magic-link", status_code=204)
 async def request_magic_link(body: MagicLinkRequest):
     if _config is None or not _config.supabase_url or not _config.supabase_service_role_key:
         raise HTTPException(status_code=503, detail="Auth not configured")
+    if body.redirect_to and not _is_allowed_redirect(body.redirect_to):
+        raise HTTPException(status_code=400, detail="Invalid redirect URL")
     try:
         from supabase import create_client
         db = create_client(_config.supabase_url, _config.supabase_service_role_key)
-        db.auth.sign_in_with_otp({"email": body.email})
+        payload: dict = {"email": body.email}
+        if body.redirect_to:
+            payload["options"] = {"email_redirect_to": body.redirect_to}
+        db.auth.sign_in_with_otp(payload)
     except Exception as exc:
         logger.error("magic_link_failed error=%s", exc)
         raise HTTPException(status_code=500, detail="Failed to send magic link")

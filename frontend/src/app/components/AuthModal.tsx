@@ -18,7 +18,10 @@ export function AuthModal({ onClose }: AuthModalProps) {
     setError(null);
     setLoading(true);
     try {
-      await requestMagicLink({ email });
+      await requestMagicLink({
+        email,
+        redirect_to: `${window.location.origin}/auth/callback`,
+      });
       setSent(true);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to send link.";
