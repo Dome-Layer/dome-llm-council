@@ -29,6 +29,7 @@ export default function VerdictPanel({ verdict, governance }: VerdictPanelProps)
         question: verdict.question,
         verdict_summary: verdict.verdict,
         consensus_confidence: verdict.consensus_confidence,
+        full_payload: verdict,
       })
       setSaveState('saved')
     } catch (err) {

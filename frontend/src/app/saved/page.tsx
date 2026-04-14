@@ -4,7 +4,105 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { listDeliberations, deleteDeliberation, type DeliberationSummary } from "@/lib/api";
+import type { MemberResponsePayload } from "@/types/sse";
 import ConfidenceBar from "@/app/components/ConfidenceBar";
+
+const MEMBER_DISPLAY: Record<string, { displayName: string; defaultRole: string }> = {
+  claude: { displayName: "Claude",   defaultRole: "Strategic Advisor" },
+  gemini: { displayName: "Gemini",   defaultRole: "Research Analyst"  },
+  openai: { displayName: "Chat-GPT", defaultRole: "Critical Advisor"  },
+};
+const MEMBER_ORDER = ["claude", "gemini", "openai"];
+
+function MemberResponsesSection({ responses }: { responses: MemberResponsePayload[] }) {
+  const [activeRounds, setActiveRounds] = useState<Record<string, 1 | 2>>({});
+
+  const byMember: Record<string, { r1: MemberResponsePayload | null; r2: MemberResponsePayload | null; role: string }> = {};
+  for (const r of responses) {
+    if (!byMember[r.member_id]) byMember[r.member_id] = { r1: null, r2: null, role: r.role };
+    if (r.round === 1) byMember[r.member_id].r1 = r;
+    if (r.round === 2) byMember[r.member_id].r2 = r;
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      {MEMBER_ORDER.filter(id => byMember[id]).map(id => {
+        const { r1, r2, role } = byMember[id];
+        const hasBoth = r1 !== null && r2 !== null;
+        const activeRound: 1 | 2 = activeRounds[id] ?? (r2 ? 2 : 1);
+        const current = activeRound === 2 ? r2 : r1;
+        const display = MEMBER_DISPLAY[id] ?? { displayName: id, defaultRole: role };
+
+        return (
+          <div
+            key={id}
+            style={{
+              background: "var(--color-bg-muted)",
+              border: "0.5px solid var(--color-border-default)",
+              borderRadius: "var(--radius-md)",
+              padding: "14px 16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+            }}
+          >
+            {/* Member header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+              <div>
+                <p style={{ fontSize: "var(--text-label)", fontWeight: 600, color: "var(--color-text-primary)", margin: 0 }}>
+                  {display.displayName}
+                </p>
+                <p className="eyebrow" style={{ marginTop: 2 }}>{role}</p>
+              </div>
+              {hasBoth && (
+                <div style={{ display: "flex", gap: "4px" }}>
+                  {([1, 2] as const).map(r => (
+                    <button
+                      key={r}
+                      onClick={() => setActiveRounds(prev => ({ ...prev, [id]: r }))}
+                      className={activeRound === r ? "badge badge-accent" : "badge badge-neutral"}
+                      style={{ cursor: "pointer", border: "none", fontFamily: "inherit", background: "none" }}
+                    >
+                      R{r}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Response text */}
+            {current && (
+              <>
+                <p style={{
+                  fontSize: "var(--text-body-sm)",
+                  color: "var(--color-text-secondary)",
+                  lineHeight: 1.65,
+                  margin: 0,
+                  whiteSpace: "pre-wrap",
+                }}>
+                  {current.response}
+                </p>
+                <div>
+                  <p style={{
+                    fontSize: "var(--text-caption)",
+                    color: "var(--color-text-tertiary)",
+                    fontWeight: 500,
+                    margin: "0 0 5px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                  }}>
+                    Confidence
+                  </p>
+                  <ConfidenceBar value={current.confidence} />
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function ConfidenceBadge({ value }: { value: number }) {
   const pct = Math.round(value * 100);
@@ -199,17 +297,50 @@ function DeliberationRow({
               </button>
             </div>
 
-            {/* Modal body — full verdict text */}
-            <div className="prose response-modal-body">
-              <p style={{
-                fontSize: "var(--text-body-sm)",
-                color: "var(--color-text-secondary)",
-                lineHeight: 1.7,
-                margin: 0,
-                whiteSpace: "pre-wrap",
-              }}>
+            {/* Modal body */}
+            <div className="prose response-modal-body" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+
+              {/* Verdict text */}
+              <p style={{ fontSize: "var(--text-body-sm)", color: "var(--color-text-secondary)", lineHeight: 1.7, margin: 0, whiteSpace: "pre-wrap" }}>
                 {item.verdict_summary}
               </p>
+
+              {/* Recommendation */}
+              {item.full_payload?.recommendation && (
+                <div>
+                  <p style={{ fontSize: "var(--text-label)", fontWeight: 600, color: "var(--color-text-primary)", margin: "0 0 6px" }}>
+                    Recommendation
+                  </p>
+                  <p style={{ fontSize: "var(--text-body-sm)", color: "var(--color-text-secondary)", lineHeight: 1.65, margin: 0 }}>
+                    {item.full_payload.recommendation}
+                  </p>
+                </div>
+              )}
+
+              {/* Dissenting views */}
+              {(item.full_payload?.dissenting_views?.length ?? 0) > 0 && (
+                <div>
+                  <p style={{ fontSize: "var(--text-label)", fontWeight: 600, color: "var(--color-text-primary)", margin: "0 0 8px" }}>
+                    Dissenting views
+                  </p>
+                  <ul style={{ margin: 0, paddingLeft: "var(--space-4)", listStyleType: "disc", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                    {item.full_payload!.dissenting_views.map((view, i) => (
+                      <li key={i} style={{ fontSize: "var(--text-body-sm)", color: "var(--color-text-secondary)", lineHeight: 1.6 }}>
+                        {view}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Member responses */}
+              {(item.full_payload?.member_responses?.length ?? 0) > 0 && (
+                <div>
+                  <hr style={{ border: "none", borderTop: "0.5px solid var(--color-border-subtle)", margin: "0 0 20px" }} />
+                  <p className="eyebrow" style={{ marginBottom: "16px" }}>Panel members</p>
+                  <MemberResponsesSection responses={item.full_payload!.member_responses} />
+                </div>
+              )}
             </div>
 
             {/* Modal footer — confidence + date */}
@@ -225,12 +356,7 @@ function DeliberationRow({
                 Consensus confidence
               </p>
               <ConfidenceBar value={item.consensus_confidence} />
-              <p style={{
-                fontSize: "var(--text-caption)",
-                color: "var(--color-text-tertiary)",
-                marginTop: "10px",
-                marginBottom: 0,
-              }}>
+              <p style={{ fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", marginTop: "10px", marginBottom: 0 }}>
                 Saved {savedAt}
               </p>
             </div>

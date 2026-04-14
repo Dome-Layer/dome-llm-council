@@ -1,4 +1,5 @@
 import { authHeaders } from "@/lib/auth";
+import type { VerdictPayload } from "@/types/sse";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000") + "/api/v1";
 
@@ -61,6 +62,7 @@ export interface DeliberationSummary {
   consensus_confidence: number;
   saved_at: string;
   label: string | null;
+  full_payload: VerdictPayload | null;
 }
 
 export async function listDeliberations(): Promise<{ deliberations: DeliberationSummary[] }> {
@@ -69,7 +71,7 @@ export async function listDeliberations(): Promise<{ deliberations: Deliberation
 
 export async function saveDeliberation(
   deliberationId: string,
-  payload: { question: string; verdict_summary: string; consensus_confidence: number; label?: string },
+  payload: { question: string; verdict_summary: string; consensus_confidence: number; label?: string; full_payload?: VerdictPayload },
 ): Promise<{ saved: boolean; saved_at: string }> {
   return request("POST", `/deliberations/${deliberationId}/save`, payload);
 }

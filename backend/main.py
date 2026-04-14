@@ -183,6 +183,7 @@ class SaveDeliberationRequest(BaseModel):
     verdict_summary: str
     consensus_confidence: float
     label: Optional[str] = None
+    full_payload: Optional[dict] = None
 
 
 @app.post("/api/v1/deliberations/{deliberation_id}/save")
@@ -205,6 +206,7 @@ async def save_deliberation(deliberation_id: str, body: SaveDeliberationRequest,
             "consensus_confidence": body.consensus_confidence,
             "label": body.label,
             "saved_at": now,
+            "full_payload": body.full_payload,
         }
         db.table("deliberations").insert(row).execute()
         return {"saved": True, "saved_at": now}
