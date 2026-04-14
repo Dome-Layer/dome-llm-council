@@ -1,13 +1,42 @@
+'use client'
+
+import { useState } from 'react'
 import type { VerdictPayload, GovernanceEventPayload } from '@/types/sse'
 import ConfidenceBar from './ConfidenceBar'
 import GovernanceBadge from './GovernanceBadge'
+import { useAuth } from '@/context/AuthContext'
+import { saveDeliberation } from '@/lib/api'
 
 interface VerdictPanelProps {
   verdict: VerdictPayload
   governance: GovernanceEventPayload | null
 }
 
+type SaveState = 'idle' | 'saving' | 'saved' | 'error'
+
 export default function VerdictPanel({ verdict, governance }: VerdictPanelProps) {
+  const { isAuthenticated } = useAuth()
+  const [saveState, setSaveState] = useState<SaveState>('idle')
+  const [saveError, setSaveError] = useState('')
+
+  async function handleSave() {
+    if (saveState !== 'idle') return
+    setSaveState('saving')
+    setSaveError('')
+    try {
+      const id = crypto.randomUUID()
+      await saveDeliberation(id, {
+        question: verdict.question,
+        verdict_summary: verdict.verdict,
+        consensus_confidence: verdict.consensus_confidence,
+      })
+      setSaveState('saved')
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to save')
+      setSaveState('error')
+    }
+  }
+
   return (
     <div
       className="card-accent"
@@ -145,6 +174,72 @@ export default function VerdictPanel({ verdict, governance }: VerdictPanelProps)
               <> &middot; Rules applied: {governance.rules_applied.join(', ')}</>
             )}
           </p>
+        </div>
+      )}
+
+      {/* Save action */}
+      {isAuthenticated && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--space-3)',
+            paddingTop: 'var(--space-2)',
+          }}
+        >
+          <button
+            onClick={handleSave}
+            disabled={saveState !== 'idle'}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 16px',
+              borderRadius: 'var(--radius-md)',
+              fontSize: 'var(--text-body-sm)',
+              fontWeight: 500,
+              cursor: saveState !== 'idle' ? 'default' : 'pointer',
+              border: saveState === 'saved'
+                ? '0.5px solid var(--color-success-border, #22c55e)'
+                : '0.5px solid var(--color-border-accent)',
+              background: saveState === 'saved'
+                ? 'var(--color-success-subtle, rgba(34,197,94,0.08))'
+                : 'var(--color-surface-raised)',
+              color: saveState === 'saved'
+                ? 'var(--color-success, #16a34a)'
+                : saveState === 'error'
+                  ? 'var(--color-error)'
+                  : 'var(--color-text-primary)',
+              transition: 'opacity 0.15s',
+              opacity: saveState === 'saving' ? 0.6 : 1,
+            }}
+          >
+            {saveState === 'saving' && (
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: 12,
+                  height: 12,
+                  border: '1.5px solid currentColor',
+                  borderTopColor: 'transparent',
+                  borderRadius: '50%',
+                  animation: 'spin 0.7s linear infinite',
+                }}
+              />
+            )}
+            {saveState === 'saved' ? 'Saved' : saveState === 'saving' ? 'Saving…' : 'Save deliberation'}
+          </button>
+
+          {saveState === 'error' && (
+            <span
+              style={{
+                fontSize: 'var(--text-caption)',
+                color: 'var(--color-error)',
+              }}
+            >
+              {saveError || 'Could not save — please try again.'}
+            </span>
+          )}
         </div>
       )}
     </div>
