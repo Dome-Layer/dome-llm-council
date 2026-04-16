@@ -7,7 +7,7 @@ from supabase import create_client, Client
 @lru_cache(maxsize=1)
 def get_supabase_client() -> Client | None:
     url = os.getenv("SUPABASE_URL", "")
-    anon_key = os.getenv("SUPABASE_ANON_KEY", "")
-    if not url or not anon_key:
+    service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    if not url or not service_role_key:
         return None
-    return create_client(url, anon_key)
+    return create_client(url, service_role_key)
