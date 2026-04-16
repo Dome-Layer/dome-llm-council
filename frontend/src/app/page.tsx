@@ -63,7 +63,7 @@ async function streamDeliberation(
   question: string,
   onEvent: (event: SSEEvent) => void,
 ): Promise<void> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+  const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
 
   const response = await fetch(`${apiUrl}/deliberate`, {
     method: 'POST',
