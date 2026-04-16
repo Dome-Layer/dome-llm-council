@@ -44,10 +44,6 @@ async function request<T>(
 
 // ─── Auth ─────────────────────────────────────────────────────────
 
-export async function requestMagicLink(payload: { email: string; redirect_to?: string }): Promise<void> {
-  await request<void>("POST", "/auth/magic-link", payload);
-}
-
 export async function deleteSession(): Promise<void> {
   await request<void>("DELETE", "/auth/session");
 }

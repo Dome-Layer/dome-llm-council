@@ -6,6 +6,7 @@ import QuestionForm from './components/QuestionForm'
 import CouncilCard from './components/CouncilCard'
 import VerdictPanel from './components/VerdictPanel'
 import StatusIndicator from './components/StatusIndicator'
+import AuthGuard from '@/components/AuthGuard'
 
 // ─── Member config ────────────────────────────────────────────────
 
@@ -213,6 +214,7 @@ export default function Page() {
   const hasAnyResponse = MEMBER_ORDER.some(id => members[id].round1 !== null)
 
   return (
+    <AuthGuard>
     <div
       style={{
         maxWidth: '1152px',
@@ -308,5 +310,6 @@ export default function Page() {
           <VerdictPanel verdict={verdict} governance={governance} />
         )}
     </div>
+    </AuthGuard>
   )
 }

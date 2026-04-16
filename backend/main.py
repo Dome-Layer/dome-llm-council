@@ -5,11 +5,12 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import AsyncGenerator, Optional
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
+from auth import get_current_user
 from config import CouncilConfig, build_council_config
 from council.orchestrator import run_deliberation
 from models.request import DeliberationRequest
@@ -81,8 +82,18 @@ app = FastAPI(title="Dome LLM Council", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_origins=[
+        "https://domelayer.com",
+        "https://analyzer.domelayer.com",
+        "https://data-intelligence.domelayer.com",
+        "https://llm-council.domelayer.com",
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://localhost:3003",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -199,12 +210,10 @@ class SaveDeliberationRequest(BaseModel):
 
 
 @app.post("/api/v1/deliberations/{deliberation_id}/save")
-async def save_deliberation(deliberation_id: str, body: SaveDeliberationRequest, req: Request):
+async def save_deliberation(deliberation_id: str, body: SaveDeliberationRequest, req: Request, user: dict = Depends(get_current_user)):
     if _config is None:
         raise HTTPException(status_code=503, detail="Council not initialised")
-    user_id = _extract_user_id(_config, req)
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    user_id = user["user_id"]
     db = _get_db_client(_config)
     if db is None:
         raise HTTPException(status_code=503, detail="Database not configured")
@@ -228,12 +237,10 @@ async def save_deliberation(deliberation_id: str, body: SaveDeliberationRequest,
 
 
 @app.get("/api/v1/deliberations")
-async def list_deliberations(req: Request):
+async def list_deliberations(req: Request, user: dict = Depends(get_current_user)):
     if _config is None:
         raise HTTPException(status_code=503, detail="Council not initialised")
-    user_id = _extract_user_id(_config, req)
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    user_id = user["user_id"]
     db = _get_db_client(_config)
     if db is None:
         raise HTTPException(status_code=503, detail="Database not configured")
@@ -252,12 +259,10 @@ async def list_deliberations(req: Request):
 
 
 @app.delete("/api/v1/deliberations/{deliberation_id}", status_code=204)
-async def delete_deliberation_endpoint(deliberation_id: str, req: Request):
+async def delete_deliberation_endpoint(deliberation_id: str, req: Request, user: dict = Depends(get_current_user)):
     if _config is None:
         raise HTTPException(status_code=503, detail="Council not initialised")
-    user_id = _extract_user_id(_config, req)
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    user_id = user["user_id"]
     db = _get_db_client(_config)
     if db is None:
         raise HTTPException(status_code=503, detail="Database not configured")
