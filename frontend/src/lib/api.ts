@@ -1,7 +1,7 @@
 import { authHeaders } from "@/lib/auth";
 import type { VerdictPayload } from "@/types/sse";
 
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000") + "/api/v1";
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "") + "/api/v1";
 
 export class APIError extends Error {
   constructor(

@@ -189,12 +189,15 @@ async def request_magic_link(body: MagicLinkRequest):
 
 @app.delete("/api/v1/auth/session", status_code=204)
 async def delete_session(req: Request):
-    user_id = _extract_user_id(_config, req) if _config else None
-    if user_id and _config:
+    auth = req.headers.get("Authorization", "")
+    if not auth.startswith("Bearer ") or not _config:
+        return
+    token = auth.removeprefix("Bearer ").strip()
+    if token:
         try:
             db = _get_db_client(_config)
             if db:
-                db.auth.admin.delete_user(user_id)
+                db.auth.admin.sign_out(token)
         except Exception:
             pass  # best-effort
 

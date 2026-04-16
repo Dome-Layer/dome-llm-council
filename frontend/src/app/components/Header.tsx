@@ -34,7 +34,10 @@ export function Header() {
 
             {isAuthenticated ? (
               <button
-                onClick={() => signOut()}
+                onClick={async () => {
+                  await signOut();
+                  window.location.href = '/';
+                }}
                 className="btn btn-neutral"
                 style={{ padding: '12px 24px', fontSize: 'var(--text-body-sm)' }}
               >
