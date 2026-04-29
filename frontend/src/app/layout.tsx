@@ -44,7 +44,7 @@ const themeScript = `
       ? saved
       : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', theme);
-  } catch (e) {}
+  } catch (e) { /* SSR or cookie unavailable — theme applied on client hydration */ }
 })();
 `
 

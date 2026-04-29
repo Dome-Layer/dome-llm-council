@@ -2,7 +2,17 @@
 
 *Three AI advisors deliberate on your question, cross-examine each other, and produce a governed verdict with a confidence score and full audit trail.*
 
-Part of the Dome portfolio. For full tool specification see [`TOOL_CONTEXT.md`](./TOOL_CONTEXT.md). For cross-cutting Dome context see [dome-docs](../dome-docs/).
+**DOME phase:** Model — structured multi-model deliberation that turns a question into a governed, auditable verdict before any action is taken.
+
+Part of the [Dome portfolio](https://github.com/Dome-Layer). For full tool specification see [`TOOL_CONTEXT.md`](./TOOL_CONTEXT.md).
+
+---
+
+## Why multi-model deliberation
+
+Single-model AI answers are opaque: one model, one perspective, confidence scores you cannot audit, no dissent captured. For decisions in financial services, healthcare, or public sector (GDPR, MiFID II, AI Act), that is not enough.
+
+LLM Council runs three independent models — Claude, Gemini, GPT-4o — in a structured two-round deliberation. The verdict includes a dissenting view, a confidence score, a reasoning chain, and a `GovernanceEvent` written to an append-only audit log. Every deliberation is reproducible and traceable.
 
 ---
 
@@ -17,7 +27,7 @@ Part of the Dome portfolio. For full tool specification see [`TOOL_CONTEXT.md`](
 
 ```bash
 # Clone
-git clone https://github.com/[your-github-org]/dome-llm-council.git
+git clone https://github.com/Dome-Layer/dome-llm-council.git
 cd dome-llm-council
 
 # Backend
@@ -87,8 +97,8 @@ Each deliberation runs in three phases, streamed to the browser via Server-Sent 
 ## Deployment
 
 ### Cloud demo (domelayer.com)
-- **Frontend:** [TODO — confirm hosting provider and region]
-- **Backend:** [TODO — confirm hosting provider and region]
+- **Frontend:** Vercel Hobby — Frankfurt, Germany
+- **Backend:** Railway Hobby — Amsterdam, Netherlands
 - **Live URL:** https://llm-council.domelayer.com
 
 ### Client Azure tenant
@@ -151,6 +161,7 @@ dome-llm-council/
 
 ## Related
 
-- [dome-docs](../dome-docs/) — cross-cutting Dome documentation
+- [Dome-Layer GitHub organisation](https://github.com/Dome-Layer) — the broader portfolio
 - [`TOOL_CONTEXT.md`](./TOOL_CONTEXT.md) — full spec for this tool (architecture, governance, prompts, limitations)
-- [Portfolio status](../dome-docs/PORTFOLIO_STATUS.md)
+
+> Strategic context, partnership details, and cross-portfolio documentation live in a separate private repository (`dome-docs`).

@@ -34,7 +34,7 @@ async function request<T>(
     try {
       const data = await res.json();
       msg = data.detail ?? data.message ?? msg;
-    } catch {}
+    } catch { /* non-JSON response body — fall through to HTTP status message */ }
     throw new APIError(res.status, msg);
   }
 
