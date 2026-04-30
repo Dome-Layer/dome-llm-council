@@ -60,7 +60,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 _GOVERNANCE_EVENT_COLUMNS = {
     "agent_id", "action_type", "timestamp", "input_hash", "input_type",
     "output_summary", "rules_applied", "rules_triggered", "confidence",
-    "human_in_loop", "user_id", "metadata",
+    "human_in_loop", "user_id", "workflow_run_id", "metadata",
 }
 
 _db_client = None
