@@ -1,5 +1,6 @@
+import hashlib
 import json
-import logging
+import os
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -8,15 +9,50 @@ from typing import AsyncGenerator, Optional
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from sse_starlette.sse import EventSourceResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as StarletteRequest
 
 from auth import get_current_user
 from config import CouncilConfig, build_council_config
 from council.orchestrator import run_deliberation
+from log_setup import get_logger, setup_logging
 from models.request import DeliberationRequest
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
-logger = logging.getLogger(__name__)
+setup_logging()
+logger = get_logger(__name__)
+
+
+# Per-IP rate limiter. /deliberate runs up to 7 LLM calls per request, so the
+# default ceiling here is intentionally tight — the audit pegs the cost burn
+# vector for this endpoint specifically. Per-user tiers (more generous for
+# authenticated users) will land alongside the dome-auth extraction in P1.
+limiter = Limiter(key_func=get_remote_address)
+
+
+def _user_token_hash(request: Request) -> Optional[str]:
+    """Stable opaque identifier derived from a Bearer token, for log diagnostics
+    only. Not used as a rate-limit key today — see comment on `limiter` above."""
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        return "user:" + hashlib.sha256(auth[7:].encode()).hexdigest()[:16]
+    return None
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: StarletteRequest, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        if os.getenv("ENVIRONMENT", "development") == "production":
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=63072000; includeSubDomains"
+            )
+        return response
 
 
 # Columns that exist in the governance_events table.
@@ -80,21 +116,41 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Dome LLM Council", version="1.0.0", lifespan=lifespan)
 
+# Register the slowapi limiter on the app and wire its 429 handler.
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+def _build_cors_origins() -> list[str]:
+    """Build the CORS allowlist from ALLOWED_ORIGINS env var, falling back to
+    the public production list if unset. Localhost entries are filtered out
+    when ENVIRONMENT=production."""
+    env = os.getenv("ENVIRONMENT", "development")
+    raw = os.getenv("ALLOWED_ORIGINS", "")
+    if raw:
+        origins = [o.strip() for o in raw.split(",") if o.strip()]
+    else:
+        origins = [
+            "https://domelayer.com",
+            "https://analyzer.domelayer.com",
+            "https://data-intelligence.domelayer.com",
+            "https://llm-council.domelayer.com",
+        ]
+    if env == "production":
+        origins = [o for o in origins if "localhost" not in o and "127.0.0.1" not in o]
+    return origins
+
+
+# Middleware applied in reverse registration order (last added = outermost).
+# CORSMiddleware must be outermost so CORS headers are present on every
+# response, including 429s emitted by slowapi.
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://domelayer.com",
-        "https://analyzer.domelayer.com",
-        "https://data-intelligence.domelayer.com",
-        "https://llm-council.domelayer.com",
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:3002",
-        "http://localhost:3003",
-    ],
+    allow_origins=_build_cors_origins(),
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 
@@ -121,11 +177,18 @@ def _extract_user_id(config: CouncilConfig, req: Request) -> Optional[str]:
 
 
 @app.post("/deliberate")
-async def deliberate(body: DeliberationRequest, req: Request) -> EventSourceResponse:
+@limiter.limit("6/minute")  # 1 request per 10s per IP
+async def deliberate(request: Request, body: DeliberationRequest) -> EventSourceResponse:
     if _config is None:
         raise HTTPException(status_code=503, detail="Council not initialised")
 
-    user_id = _extract_user_id(_config, req)
+    user_id = _extract_user_id(_config, request)
+    logger.info(
+        "deliberate_request",
+        user_id=user_id,
+        user_token_id=_user_token_hash(request),
+        client_ip=get_remote_address(request),
+    )
 
     async def _stream() -> AsyncGenerator[dict, None]:
         try:
@@ -136,11 +199,10 @@ async def deliberate(body: DeliberationRequest, req: Request) -> EventSourceResp
                 openai=_config.openai,
                 synthesizer=_config.synthesizer,
             ):
-                if await req.is_disconnected():
-                    logger.info("Client disconnected — stopping deliberation")
+                if await request.is_disconnected():
+                    logger.info("client_disconnected_during_deliberation")
                     break
                 yield {"data": payload}
-                # Persist governance event to shared DOME Platform project after streaming it
                 try:
                     parsed = json.loads(payload)
                     if parsed.get("type") == "governance_event":
@@ -150,7 +212,7 @@ async def deliberate(body: DeliberationRequest, req: Request) -> EventSourceResp
                 except Exception:
                     pass
         except Exception as exc:
-            logger.error("Deliberation error: %s", exc, exc_info=True)
+            logger.error("deliberation_error", error=str(exc), exc_info=True)
             yield {"data": json.dumps({"type": "error", "data": {"message": str(exc)}})}
 
     return EventSourceResponse(_stream())

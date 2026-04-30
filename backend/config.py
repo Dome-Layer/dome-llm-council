@@ -16,6 +16,8 @@ class CouncilConfig:
     synthesizer: LLMProvider
     supabase_url: str = ""
     supabase_service_role_key: str = ""
+    environment: str = "development"
+    allowed_origins: list[str] = None  # type: ignore[assignment]
 
 
 def build_council_config() -> CouncilConfig:
@@ -35,6 +37,9 @@ def build_council_config() -> CouncilConfig:
     else:
         synthesizer = OpenAIProvider(api_key=openai_key, model=synthesizer_model)
 
+    allowed_origins_raw = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000")
+    allowed_origins = [o.strip() for o in allowed_origins_raw.split(",") if o.strip()]
+
     return CouncilConfig(
         claude=claude,
         gemini=gemini,
@@ -42,4 +47,6 @@ def build_council_config() -> CouncilConfig:
         synthesizer=synthesizer,
         supabase_url=os.getenv("SUPABASE_URL", ""),
         supabase_service_role_key=os.getenv("SUPABASE_SERVICE_ROLE_KEY", ""),
+        environment=os.getenv("ENVIRONMENT", "development"),
+        allowed_origins=allowed_origins,
     )
