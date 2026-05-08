@@ -1,7 +1,6 @@
 import hashlib
 import json
 import os
-import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import AsyncGenerator, Optional
@@ -49,18 +48,26 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         if os.getenv("ENVIRONMENT", "development") == "production":
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=63072000; includeSubDomains"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
         return response
 
 
 # Columns that exist in the governance_events table.
 # The SSE payload includes extra keys (e.g. "type") that must be stripped before insert.
 _GOVERNANCE_EVENT_COLUMNS = {
-    "agent_id", "action_type", "timestamp", "input_hash", "input_type",
-    "output_summary", "rules_applied", "rules_triggered", "confidence",
-    "human_in_loop", "user_id", "workflow_run_id", "metadata",
+    "agent_id",
+    "action_type",
+    "timestamp",
+    "input_hash",
+    "input_type",
+    "output_summary",
+    "rules_applied",
+    "rules_triggered",
+    "confidence",
+    "human_in_loop",
+    "user_id",
+    "workflow_run_id",
+    "metadata",
 }
 
 _db_client = None
@@ -75,6 +82,7 @@ def _get_db_client(config: CouncilConfig):
         return None
     try:
         from supabase import create_client
+
         _db_client = create_client(config.supabase_url, config.supabase_service_role_key)
         return _db_client
     except Exception as exc:
@@ -169,6 +177,7 @@ def _extract_user_id(config: CouncilConfig, req: Request) -> Optional[str]:
     token = auth.removeprefix("Bearer ").strip()
     try:
         from supabase import create_client
+
         db = create_client(config.supabase_url, config.supabase_service_role_key)
         resp = db.auth.get_user(token)
         return str(resp.user.id) if resp and resp.user else None
@@ -220,6 +229,7 @@ async def deliberate(request: Request, body: DeliberationRequest) -> EventSource
 
 # ─── Auth endpoints ──────────────────────────────────────────────────────────
 
+
 class MagicLinkRequest(BaseModel):
     email: str
     redirect_to: Optional[str] = None
@@ -228,6 +238,7 @@ class MagicLinkRequest(BaseModel):
 def _is_allowed_redirect(url: str) -> bool:
     """Accept only domelayer.com subdomains and localhost (dev)."""
     import re
+
     return bool(re.match(r"^https?://(localhost(:\d+)?|[\w-]+\.domelayer\.com)/", url))
 
 
@@ -239,6 +250,7 @@ async def request_magic_link(body: MagicLinkRequest):
         raise HTTPException(status_code=400, detail="Invalid redirect URL")
     try:
         from supabase import create_client
+
         db = create_client(_config.supabase_url, _config.supabase_service_role_key)
         payload: dict = {"email": body.email}
         if body.redirect_to:
@@ -266,6 +278,7 @@ async def delete_session(req: Request):
 
 # ─── Saved deliberations ─────────────────────────────────────────────────────
 
+
 class SaveDeliberationRequest(BaseModel):
     question: str
     verdict_summary: str
@@ -275,7 +288,12 @@ class SaveDeliberationRequest(BaseModel):
 
 
 @app.post("/api/v1/deliberations/{deliberation_id}/save")
-async def save_deliberation(deliberation_id: str, body: SaveDeliberationRequest, req: Request, user: dict = Depends(get_current_user)):
+async def save_deliberation(
+    deliberation_id: str,
+    body: SaveDeliberationRequest,
+    req: Request,
+    user: dict = Depends(get_current_user),
+):
     if _config is None:
         raise HTTPException(status_code=503, detail="Council not initialised")
     user_id = user["user_id"]
@@ -324,7 +342,9 @@ async def list_deliberations(req: Request, user: dict = Depends(get_current_user
 
 
 @app.delete("/api/v1/deliberations/{deliberation_id}", status_code=204)
-async def delete_deliberation_endpoint(deliberation_id: str, req: Request, user: dict = Depends(get_current_user)):
+async def delete_deliberation_endpoint(
+    deliberation_id: str, req: Request, user: dict = Depends(get_current_user)
+):
     if _config is None:
         raise HTTPException(status_code=503, detail="Council not initialised")
     user_id = user["user_id"]
@@ -332,7 +352,9 @@ async def delete_deliberation_endpoint(deliberation_id: str, req: Request, user:
     if db is None:
         raise HTTPException(status_code=503, detail="Database not configured")
     try:
-        db.table("deliberations").delete().eq("id", deliberation_id).eq("user_id", user_id).execute()
+        db.table("deliberations").delete().eq("id", deliberation_id).eq(
+            "user_id", user_id
+        ).execute()
     except Exception as exc:
         logger.error("delete_deliberation_failed error=%s", exc)
         raise HTTPException(status_code=500, detail="Failed to delete deliberation")

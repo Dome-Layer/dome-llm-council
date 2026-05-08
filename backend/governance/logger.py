@@ -17,7 +17,9 @@ def build_governance_event(
     input_hash = hashlib.sha256(raw).hexdigest()
 
     triggered = (
-        ["R-COUNCIL-LOW-CONFIDENCE"] if verdict.consensus_confidence < _LOW_CONFIDENCE_THRESHOLD else []
+        ["R-COUNCIL-LOW-CONFIDENCE"]
+        if verdict.consensus_confidence < _LOW_CONFIDENCE_THRESHOLD
+        else []
     )
     human_in_loop = "recommended" if triggered else "not_required"
 

@@ -85,6 +85,7 @@ async def run_deliberation(
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+
 def _event(event_type: str, data: dict) -> str:
     return json.dumps({"type": event_type, **data}, default=str)
 
@@ -101,9 +102,7 @@ def _format_peers(exclude_id: str, responses: list[CouncilMemberResponse]) -> st
 def _build_verdict_prompt(question: str, responses: list[CouncilMemberResponse]) -> str:
     lines = [f"Question: {question}\n"]
     for r in responses:
-        lines.append(
-            f"[Round {r.round}] {r.role}: {r.response}\n(confidence: {r.confidence:.2f})"
-        )
+        lines.append(f"[Round {r.round}] {r.role}: {r.response}\n(confidence: {r.confidence:.2f})")
     return "\n\n".join(lines)
 
 
@@ -118,7 +117,7 @@ def _parse_verdict(
     for line in text.splitlines():
         for key in keys:
             if line.startswith(f"{key}:"):
-                parsed[key] = line[len(key) + 1:].strip()
+                parsed[key] = line[len(key) + 1 :].strip()
 
     dissenting = (
         []

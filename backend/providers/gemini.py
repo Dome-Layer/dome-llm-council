@@ -10,9 +10,9 @@ from .base import LLMProvider
 
 logger = logging.getLogger(__name__)
 
-_TIMEOUT_MS  = 60_000
+_TIMEOUT_MS = 60_000
 _MAX_RETRIES = 3
-_BASE_DELAY  = 2.0   # seconds; doubles on each attempt
+_BASE_DELAY = 2.0  # seconds; doubles on each attempt
 _FALLBACK_MODEL = "gemini-2.5-flash-lite"
 
 
@@ -28,7 +28,11 @@ class GeminiProvider(LLMProvider):
             except ServerError:
                 if model == _FALLBACK_MODEL:
                     raise
-                logger.warning("Gemini primary model %s unavailable — trying fallback %s", model, _FALLBACK_MODEL)
+                logger.warning(
+                    "Gemini primary model %s unavailable — trying fallback %s",
+                    model,
+                    _FALLBACK_MODEL,
+                )
 
         raise RuntimeError("All Gemini models unavailable")  # unreachable, satisfies type checker
 
@@ -50,9 +54,17 @@ class GeminiProvider(LLMProvider):
                 if attempt < _MAX_RETRIES - 1:
                     logger.warning(
                         "Gemini %s — attempt %d/%d failed, retrying in %.0fs: %s",
-                        model, attempt + 1, _MAX_RETRIES, delay, exc,
+                        model,
+                        attempt + 1,
+                        _MAX_RETRIES,
+                        delay,
+                        exc,
                     )
                     await asyncio.sleep(delay)
                     delay *= 2
                     continue
                 raise
+
+        raise RuntimeError(
+            "Gemini retry loop exited without return"
+        )  # unreachable, satisfies type checker
