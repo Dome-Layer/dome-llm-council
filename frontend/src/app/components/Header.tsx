@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { DomeLogo } from './DomeLogo'
 import ThemeToggle from './ThemeToggle'
 import { useAuth } from '@/context/AuthContext'
+import { getAuthSiteUrl } from '@/lib/auth'
 
 export function Header() {
   const { isAuthenticated, signOut } = useAuth()
@@ -47,7 +48,7 @@ export function Header() {
               <button
                 onClick={() => {
                   const returnUrl = encodeURIComponent(window.location.href)
-                  window.location.href = `https://domelayer.com/login?redirect=${returnUrl}`
+                  window.location.href = `${getAuthSiteUrl()}/login?redirect=${returnUrl}`
                 }}
                 className="btn btn-primary"
                 style={{ padding: '12px 24px', fontSize: 'var(--text-body-sm)' }}
