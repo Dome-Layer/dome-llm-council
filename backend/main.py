@@ -130,21 +130,21 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 def _build_cors_origins() -> list[str]:
-    """Build the CORS allowlist from ALLOWED_ORIGINS env var, falling back to
-    the public production list if unset. Localhost entries are filtered out
-    when ENVIRONMENT=production."""
+    """Build the CORS allowlist from ALLOWED_ORIGINS env var. Fails closed when
+    unset in staging/production so we never silently accept a wider origin set
+    than was deliberately configured. Localhost entries are filtered out in
+    staging/production."""
     env = os.getenv("ENVIRONMENT", "development")
     raw = os.getenv("ALLOWED_ORIGINS", "")
-    if raw:
-        origins = [o.strip() for o in raw.split(",") if o.strip()]
-    else:
-        origins = [
-            "https://domelayer.com",
-            "https://analyzer.domelayer.com",
-            "https://data-intelligence.domelayer.com",
-            "https://llm-council.domelayer.com",
-        ]
-    if env == "production":
+    if not raw:
+        if env == "development":
+            return ["http://localhost:3000"]
+        raise RuntimeError(
+            f"ALLOWED_ORIGINS must be set when ENVIRONMENT={env}; "
+            "refusing to start with an unconfigured CORS allowlist."
+        )
+    origins = [o.strip() for o in raw.split(",") if o.strip()]
+    if env in ("staging", "production"):
         origins = [o for o in origins if "localhost" not in o and "127.0.0.1" not in o]
     return origins
 
