@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from governance.rules import ALWAYS_APPLIED_IDS
 from models.request import DeliberationRequest
 from models.response import CouncilMemberResponse, GovernanceEvent, VerdictResponse
+
 _LOW_CONFIDENCE_THRESHOLD = 0.65
 
 
