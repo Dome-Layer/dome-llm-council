@@ -34,9 +34,7 @@ async def run_deliberation(
     yield _event("status", {"round": 1, "message": "Parallel deliberation started"})
 
     round1: list[CouncilMemberResponse] = list(
-        await asyncio.gather(
-            *[_member_call(mid, prov, base_prompt, 1) for mid, prov in members]
-        )
+        await asyncio.gather(*[_member_call(mid, prov, base_prompt, 1) for mid, prov in members])
     )
 
     for r in round1:
