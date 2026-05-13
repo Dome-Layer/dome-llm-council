@@ -1,10 +1,9 @@
 import hashlib
 from datetime import datetime, timezone
 
+from governance.rules import ALWAYS_APPLIED_IDS
 from models.request import DeliberationRequest
 from models.response import CouncilMemberResponse, GovernanceEvent, VerdictResponse
-
-_RULES = ["R-COUNCIL-01", "R-COUNCIL-02", "R-COUNCIL-03"]
 _LOW_CONFIDENCE_THRESHOLD = 0.65
 
 
@@ -33,7 +32,7 @@ def build_governance_event(
         input_hash=input_hash,
         input_type="text",
         output_summary=f"Council verdict: {request.question[:80]}",
-        rules_applied=_RULES,
+        rules_applied=ALWAYS_APPLIED_IDS,
         rules_triggered=triggered,
         confidence=verdict.consensus_confidence,
         human_in_loop=human_in_loop,

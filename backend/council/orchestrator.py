@@ -1,12 +1,16 @@
 import asyncio
 import json
+import logging
 from typing import AsyncGenerator
 
-from council.roles import COUNCIL_ROLES, ROUND_2_SUFFIX, VERDICT_SYSTEM
+from council.roles import COUNCIL_ROLES, ROUND_2_SUFFIX, VERDICT_SYSTEM, VERDICT_SYSTEM_STRUCTURED
+from council.schemas import MemberOutput, VerdictOutput
 from council.scoring import parse_confidence, strip_confidence_line
 from governance.logger import build_governance_event
 from models.request import DeliberationRequest
 from models.response import CouncilMemberResponse, VerdictResponse
+
+log = logging.getLogger(__name__)
 
 
 async def run_deliberation(
@@ -29,19 +33,10 @@ async def run_deliberation(
     # ── Round 1: parallel ────────────────────────────────────────────────────
     yield _event("status", {"round": 1, "message": "Parallel deliberation started"})
 
-    async def _call(member_id: str, provider) -> CouncilMemberResponse:
-        role = COUNCIL_ROLES[member_id]
-        text = await provider.generate(base_prompt, system=role["system"])
-        return CouncilMemberResponse(
-            member_id=member_id,
-            role=role["name"],
-            response=strip_confidence_line(text),
-            confidence=parse_confidence(text),
-            round=1,
-        )
-
     round1: list[CouncilMemberResponse] = list(
-        await asyncio.gather(*[_call(mid, prov) for mid, prov in members])
+        await asyncio.gather(
+            *[_member_call(mid, prov, base_prompt, 1) for mid, prov in members]
+        )
     )
 
     for r in round1:
@@ -52,17 +47,9 @@ async def run_deliberation(
 
     round2: list[CouncilMemberResponse] = []
     for member_id, provider in members:
-        role = COUNCIL_ROLES[member_id]
         peers = _format_peers(member_id, round1)
         prompt_r2 = base_prompt + ROUND_2_SUFFIX.format(peer_responses=peers)
-        text = await provider.generate(prompt_r2, system=role["system"])
-        r2 = CouncilMemberResponse(
-            member_id=member_id,
-            role=role["name"],
-            response=strip_confidence_line(text),
-            confidence=parse_confidence(text),
-            round=2,
-        )
+        r2 = await _member_call(member_id, provider, prompt_r2, 2)
         round2.append(r2)
         yield _event("member_response", r2.model_dump())
 
@@ -71,8 +58,7 @@ async def run_deliberation(
 
     all_responses = round1 + round2
     verdict_prompt = _build_verdict_prompt(request.question, all_responses)
-    verdict_text = await synthesizer.generate(verdict_prompt, system=VERDICT_SYSTEM)
-    verdict = _parse_verdict(request.question, verdict_text, all_responses)
+    verdict = await _verdict_call(request.question, synthesizer, verdict_prompt, all_responses)
 
     yield _event("verdict", verdict.model_dump(mode="json"))
 
@@ -81,6 +67,70 @@ async def run_deliberation(
     yield _event("governance_event", gov.model_dump(mode="json"))
 
     yield _event("done", {})
+
+
+# ── Member call with structured-output primary, text fallback ────────────────
+
+
+async def _member_call(
+    member_id: str, provider, prompt: str, round_num: int
+) -> CouncilMemberResponse:
+    role = COUNCIL_ROLES[member_id]
+    try:
+        data = await provider.generate_structured(prompt, MemberOutput, system=role["system"])
+        return CouncilMemberResponse(
+            member_id=member_id,
+            role=role["name"],
+            response=strip_confidence_line(data["reasoning"]),
+            confidence=float(data["confidence"]),
+            round=round_num,
+        )
+    except Exception:
+        log.warning(
+            "structured_output_failed member=%s round=%d — falling back to text parsing",
+            member_id,
+            round_num,
+        )
+        text = await provider.generate(prompt, system=role["system"])
+        return CouncilMemberResponse(
+            member_id=member_id,
+            role=role["name"],
+            response=strip_confidence_line(text),
+            confidence=parse_confidence(text),
+            round=round_num,
+        )
+
+
+# ── Verdict call with structured-output primary, text fallback ───────────────
+
+
+async def _verdict_call(
+    question: str,
+    synthesizer,
+    prompt: str,
+    responses: list[CouncilMemberResponse],
+) -> VerdictResponse:
+    try:
+        data = await synthesizer.generate_structured(
+            prompt, VerdictOutput, system=VERDICT_SYSTEM_STRUCTURED
+        )
+        dissenting = (
+            []
+            if data["dissent"].lower() in ("none", "")
+            else [d.strip() for d in data["dissent"].split(",") if d.strip()]
+        )
+        return VerdictResponse(
+            question=question,
+            verdict=data["verdict"],
+            consensus_confidence=float(data["confidence"]),
+            dissenting_views=dissenting,
+            recommendation=data["recommendation"],
+            member_responses=responses,
+        )
+    except Exception:
+        log.warning("structured_output_failed synthesizer — falling back to text parsing")
+        verdict_text = await synthesizer.generate(prompt, system=VERDICT_SYSTEM)
+        return _parse_verdict_text(question, verdict_text, responses)
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -106,11 +156,12 @@ def _build_verdict_prompt(question: str, responses: list[CouncilMemberResponse])
     return "\n\n".join(lines)
 
 
-def _parse_verdict(
+def _parse_verdict_text(
     question: str,
     text: str,
     responses: list[CouncilMemberResponse],
 ) -> VerdictResponse:
+    # Text-parsing fallback used only when generate_structured() fails.
     keys = ("VERDICT", "REASONING", "DISSENT", "RECOMMENDATION")
     parsed: dict[str, str] = {k: "" for k in keys}
 

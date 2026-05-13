@@ -1,10 +1,12 @@
 import asyncio
+import json
 import logging
 from typing import Optional
 
 from google import genai
 from google.genai import types
 from google.genai.errors import ServerError
+from pydantic import BaseModel
 
 from .base import LLMProvider
 
@@ -54,6 +56,64 @@ class GeminiProvider(LLMProvider):
                 if attempt < _MAX_RETRIES - 1:
                     logger.warning(
                         "Gemini %s — attempt %d/%d failed, retrying in %.0fs: %s",
+                        model,
+                        attempt + 1,
+                        _MAX_RETRIES,
+                        delay,
+                        exc,
+                    )
+                    await asyncio.sleep(delay)
+                    delay *= 2
+                    continue
+                raise
+
+        raise RuntimeError(
+            "Gemini retry loop exited without return"
+        )  # unreachable, satisfies type checker
+
+    async def generate_structured(
+        self, prompt: str, schema: type[BaseModel], system: Optional[str] = None
+    ) -> dict:
+        for model in (self._model, _FALLBACK_MODEL):
+            try:
+                return await self._generate_structured_with_retry(prompt, schema, system, model)
+            except ServerError:
+                if model == _FALLBACK_MODEL:
+                    raise
+                logger.warning(
+                    "Gemini primary model %s unavailable for structured output — trying fallback %s",
+                    model,
+                    _FALLBACK_MODEL,
+                )
+
+        raise RuntimeError("All Gemini models unavailable")  # unreachable, satisfies type checker
+
+    async def _generate_structured_with_retry(
+        self,
+        prompt: str,
+        schema: type[BaseModel],
+        system: Optional[str],
+        model: str,
+    ) -> dict:
+        config = types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=schema,
+            system_instruction=system,
+            http_options=types.HttpOptions(timeout=_TIMEOUT_MS),
+        )
+        delay = _BASE_DELAY
+        for attempt in range(_MAX_RETRIES):
+            try:
+                response = await self._client.aio.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                    config=config,
+                )
+                return json.loads(response.text or "{}")
+            except ServerError as exc:
+                if attempt < _MAX_RETRIES - 1:
+                    logger.warning(
+                        "Gemini %s structured — attempt %d/%d failed, retrying in %.0fs: %s",
                         model,
                         attempt + 1,
                         _MAX_RETRIES,
