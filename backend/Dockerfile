@@ -10,6 +10,7 @@ COPY . .
 RUN useradd -m -u 1000 appuser
 USER appuser
 
+ENV PORT=8000
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
