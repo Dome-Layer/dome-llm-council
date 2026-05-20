@@ -20,7 +20,9 @@ from config import CouncilConfig, build_council_config
 from council.orchestrator import run_deliberation
 from log_setup import get_logger, setup_logging
 from models.request import DeliberationRequest
+from sentry_init import init_sentry
 
+init_sentry()
 setup_logging()
 logger = get_logger(__name__)
 
