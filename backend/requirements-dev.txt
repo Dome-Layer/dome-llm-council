@@ -4,7 +4,7 @@ annotated-doc==0.0.4
     # via fastapi
 annotated-types==0.7.0
     # via pydantic
-anthropic==0.102.0
+anthropic==0.103.1
     # via -r requirements.in
 anyio==4.13.0
     # via
@@ -17,18 +17,19 @@ anyio==4.13.0
     #   watchfiles
 cachetools==6.2.6
     # via pyiceberg
-certifi==2026.4.22
+certifi==2026.5.20
     # via
     #   httpcore
     #   httpx
     #   requests
+    #   sentry-sdk
 cffi==2.0.0
     # via cryptography
 cfgv==3.5.0
     # via pre-commit
 charset-normalizer==3.4.7
     # via requests
-click==8.3.3
+click==8.4.0
     # via
     #   pyiceberg
     #   uvicorn
@@ -52,16 +53,18 @@ distro==1.9.0
 docstring-parser==0.18.0
     # via anthropic
 fastapi==0.136.1
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   sentry-sdk
 filelock==3.29.0
     # via
     #   python-discovery
     #   virtualenv
 fsspec==2026.4.0
     # via pyiceberg
-google-auth==2.52.0
+google-auth==2.53.0
     # via google-genai
-google-genai==2.3.0
+google-genai==2.4.0
     # via -r requirements.in
 h11==0.16.0
     # via
@@ -97,7 +100,7 @@ idna==3.15
     #   yarl
 iniconfig==2.3.0
     # via pytest
-jiter==0.14.0
+jiter==0.15.0
     # via
     #   anthropic
     #   openai
@@ -117,7 +120,7 @@ mypy-extensions==1.1.0
     # via mypy
 nodeenv==1.10.0
     # via pre-commit
-openai==2.36.0
+openai==2.37.0
     # via -r requirements.in
 packaging==26.2
     # via
@@ -195,6 +198,8 @@ rich==14.3.4
     # via pyiceberg
 ruff==0.6.9
     # via -r requirements-dev.in
+sentry-sdk==2.60.0
+    # via -r requirements.in
 six==1.17.0
     # via python-dateutil
 slowapi==0.1.9
@@ -249,14 +254,16 @@ typing-inspection==0.4.2
     #   fastapi
     #   pydantic
 urllib3==2.7.0
-    # via requests
+    # via
+    #   requests
+    #   sentry-sdk
 uvicorn==0.47.0
     # via -r requirements.in
 uvloop==0.22.1
     # via uvicorn
 virtualenv==21.3.3
     # via pre-commit
-watchfiles==1.1.1
+watchfiles==1.2.0
     # via uvicorn
 websockets==15.0.1
     # via
@@ -265,7 +272,7 @@ websockets==15.0.1
     #   uvicorn
 wrapt==2.1.2
     # via deprecated
-yarl==1.23.0
+yarl==1.24.2
     # via
     #   postgrest
     #   storage3
