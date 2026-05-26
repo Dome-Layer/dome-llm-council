@@ -1,7 +1,7 @@
-from datetime import datetime
-from typing import Optional
-
+from dome_core.governance import GovernanceEvent
 from pydantic import BaseModel
+
+__all__ = ["CouncilMemberResponse", "VerdictResponse", "GovernanceEvent"]
 
 
 class CouncilMemberResponse(BaseModel):
@@ -19,19 +19,3 @@ class VerdictResponse(BaseModel):
     dissenting_views: list[str]
     recommendation: str
     member_responses: list[CouncilMemberResponse]
-
-
-class GovernanceEvent(BaseModel):
-    agent_id: str
-    action_type: str
-    timestamp: datetime
-    input_hash: str
-    input_type: str
-    output_summary: str
-    rules_applied: list[str]
-    rules_triggered: list[str]
-    confidence: Optional[float]
-    human_in_loop: str
-    user_id: Optional[str]
-    workflow_run_id: Optional[str] = None
-    metadata: dict
