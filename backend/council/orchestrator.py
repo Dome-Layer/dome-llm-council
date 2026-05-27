@@ -6,6 +6,7 @@ from typing import AsyncGenerator
 from council.roles import COUNCIL_ROLES, ROUND_2_SUFFIX, VERDICT_SYSTEM, VERDICT_SYSTEM_STRUCTURED
 from council.schemas import MemberOutput, VerdictOutput
 from council.scoring import parse_confidence, strip_confidence_line
+from dome_core.sanitize import sanitize_user_text
 from governance.logger import build_governance_event
 from models.request import DeliberationRequest
 from models.response import CouncilMemberResponse, VerdictResponse
@@ -20,9 +21,11 @@ async def run_deliberation(
     openai,
     synthesizer,
 ) -> AsyncGenerator[str, None]:
-    base_prompt = request.question
-    if request.context:
-        base_prompt = f"Context:\n{request.context}\n\nQuestion: {request.question}"
+    question = sanitize_user_text(request.question)
+    context = sanitize_user_text(request.context) if request.context else None
+    base_prompt = question
+    if context:
+        base_prompt = f"Context:\n{context}\n\nQuestion: {question}"
 
     members = [
         ("claude", claude),
@@ -55,8 +58,8 @@ async def run_deliberation(
     yield _event("status", {"round": 3, "message": "Synthesising verdict"})
 
     all_responses = round1 + round2
-    verdict_prompt = _build_verdict_prompt(request.question, all_responses)
-    verdict = await _verdict_call(request.question, synthesizer, verdict_prompt, all_responses)
+    verdict_prompt = _build_verdict_prompt(question, all_responses)
+    verdict = await _verdict_call(question, synthesizer, verdict_prompt, all_responses)
 
     yield _event("verdict", verdict.model_dump(mode="json"))
 

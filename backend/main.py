@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from typing import AsyncGenerator, Optional
 
 from dome_core.db import get_db_optional
-from dome_core.middleware import SecurityHeadersMiddleware
+from dome_core.middleware import RequestIDMiddleware, SecurityHeadersMiddleware
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -138,6 +138,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
+app.add_middleware(RequestIDMiddleware)
 
 
 @app.api_route("/api/v1/health", methods=["GET", "HEAD"])
