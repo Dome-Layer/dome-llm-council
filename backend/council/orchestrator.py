@@ -3,10 +3,11 @@ import json
 import logging
 from typing import AsyncGenerator
 
+from dome_core.sanitize import sanitize_user_text
+
 from council.roles import COUNCIL_ROLES, ROUND_2_SUFFIX, VERDICT_SYSTEM, VERDICT_SYSTEM_STRUCTURED
 from council.schemas import MemberOutput, VerdictOutput
 from council.scoring import parse_confidence, strip_confidence_line
-from dome_core.sanitize import sanitize_user_text
 from governance.logger import build_governance_event
 from models.request import DeliberationRequest
 from models.response import CouncilMemberResponse, VerdictResponse
