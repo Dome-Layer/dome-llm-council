@@ -1,13 +1,13 @@
 import os
-from functools import lru_cache
 
-from supabase import Client, create_client
+from dome_core.db import get_db_optional
 
 
-@lru_cache(maxsize=1)
-def get_supabase_client() -> Client | None:
-    url = os.getenv("SUPABASE_URL", "")
-    service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
-    if not url or not service_role_key:
-        return None
-    return create_client(url, service_role_key)
+def get_supabase_client():
+    return get_db_optional(
+        url=os.getenv("SUPABASE_URL") or None,
+        service_role_key=os.getenv("SUPABASE_SERVICE_ROLE_KEY") or None,
+    )
+
+
+__all__ = ["get_supabase_client"]

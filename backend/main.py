@@ -5,6 +5,8 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import AsyncGenerator, Optional
 
+from dome_core.db import get_db_optional
+from dome_core.middleware import SecurityHeadersMiddleware
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -12,8 +14,6 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 from sse_starlette.sse import EventSourceResponse
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request as StarletteRequest
 
 from auth import get_current_user
 from config import CouncilConfig, build_council_config
@@ -43,17 +43,6 @@ def _user_token_hash(request: Request) -> Optional[str]:
     return None
 
 
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: StarletteRequest, call_next):
-        response = await call_next(request)
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        if os.getenv("ENVIRONMENT", "development") == "production":
-            response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
-        return response
-
-
 # Columns that exist in the governance_events table.
 # The SSE payload includes extra keys (e.g. "type") that must be stripped before insert.
 _GOVERNANCE_EVENT_COLUMNS = {
@@ -72,24 +61,11 @@ _GOVERNANCE_EVENT_COLUMNS = {
     "metadata",
 }
 
-_db_client = None
-
 
 def _get_db_client(config: CouncilConfig):
-    """Return a cached Supabase client, or None if not configured."""
-    global _db_client
-    if _db_client is not None:
-        return _db_client
-    if not config.supabase_url or not config.supabase_service_role_key:
-        return None
-    try:
-        from supabase import create_client
-
-        _db_client = create_client(config.supabase_url, config.supabase_service_role_key)
-        return _db_client
-    except Exception as exc:
-        logger.warning("supabase_client_init_failed error=%s", exc)
-        return None
+    return get_db_optional(
+        url=config.supabase_url, service_role_key=config.supabase_service_role_key
+    )
 
 
 def _persist_governance_event(config: CouncilConfig, event_dict: dict) -> None:
@@ -154,7 +130,7 @@ def _build_cors_origins() -> list[str]:
 # Middleware applied in reverse registration order (last added = outermost).
 # CORSMiddleware must be outermost so CORS headers are present on every
 # response, including 429s emitted by slowapi.
-app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(SecurityHeadersMiddleware, environment=os.getenv("ENVIRONMENT", "development"))
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_build_cors_origins(),

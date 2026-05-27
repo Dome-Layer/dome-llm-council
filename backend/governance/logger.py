@@ -1,9 +1,10 @@
-import hashlib
 from datetime import datetime, timezone
+
+from dome_core.governance import GovernanceEvent, hash_input_text
 
 from governance.rules import ALWAYS_APPLIED_IDS
 from models.request import DeliberationRequest
-from models.response import CouncilMemberResponse, GovernanceEvent, VerdictResponse
+from models.response import CouncilMemberResponse, VerdictResponse
 
 _LOW_CONFIDENCE_THRESHOLD = 0.65
 
@@ -13,8 +14,7 @@ def build_governance_event(
     responses: list[CouncilMemberResponse],
     verdict: VerdictResponse,
 ) -> GovernanceEvent:
-    raw = (request.question + (request.context or "")).encode()
-    input_hash = hashlib.sha256(raw).hexdigest()
+    input_hash = hash_input_text(request.question + (request.context or ""))
 
     triggered = (
         ["R-COUNCIL-LOW-CONFIDENCE"]
