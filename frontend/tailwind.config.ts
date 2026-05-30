@@ -3,7 +3,10 @@ import domePreset from "@dome-layer/dome-ui/tailwind-preset";
 
 const config: Config = {
   presets: [domePreset as Partial<Config> as Config],
-  content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
+  content: [
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
+    "./node_modules/@dome-layer/dome-ui/dist/**/*.js",
+  ],
   theme: {
     extend: {
       maxWidth: {
