@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import { Header } from './components/Header'
 import { Footer } from './components/Footer'
@@ -49,11 +50,12 @@ const themeScript = `
 `
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const nonce = headers().get('x-nonce') ?? undefined
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans min-h-screen flex flex-col`}>
         <AuthProvider>
