@@ -15,6 +15,8 @@ anyio==4.13.0
     #   sse-starlette
     #   starlette
     #   watchfiles
+ast-serialize==0.5.0
+    # via mypy
 cachetools==6.2.6
     # via pyiceberg
 certifi==2026.5.20
@@ -52,7 +54,7 @@ distro==1.9.0
     #   openai
 docstring-parser==0.18.0
     # via anthropic
-dome-core @ git+https://github.com/Dome-Layer/dome-core.git@b65bcf0548b102c69b5ae45014cb51f09ad99f56
+dome-core @ git+https://github.com/Dome-Layer/dome-core.git@v0.3.0
     # via -r requirements.in
 fastapi==0.136.3
     # via
@@ -65,7 +67,7 @@ filelock==3.29.0
     #   virtualenv
 fsspec==2026.4.0
     # via pyiceberg
-google-auth==2.53.0
+google-auth[requests]==2.53.0
     # via google-genai
 google-genai==2.7.0
     # via -r requirements.in
@@ -81,7 +83,7 @@ httpcore==1.0.9
     # via httpx
 httptools==0.8.0
     # via uvicorn
-httpx==0.28.1
+httpx[http2]==0.28.1
     # via
     #   anthropic
     #   google-genai
@@ -107,6 +109,8 @@ jiter==0.15.0
     # via
     #   anthropic
     #   openai
+librt==0.11.0
+    # via mypy
 limits==5.8.0
     # via slowapi
 markdown-it-py==4.2.0
@@ -117,7 +121,7 @@ mmh3==5.2.1
     # via pyiceberg
 multidict==6.7.1
     # via yarl
-mypy==1.11.2
+mypy==2.1.0
     # via -r requirements-dev.in
 mypy-extensions==1.1.0
     # via mypy
@@ -130,6 +134,8 @@ packaging==26.2
     #   deprecation
     #   limits
     #   pytest
+pathspec==1.1.1
+    # via mypy
 platformdirs==4.10.0
     # via
     #   python-discovery
@@ -167,7 +173,7 @@ pygments==2.20.0
     # via rich
 pyiceberg==0.11.1
     # via storage3
-pyjwt==2.13.0
+pyjwt[crypto]==2.13.0
     # via
     #   dome-core
     #   supabase-auth
@@ -204,7 +210,7 @@ rich==14.3.4
     # via pyiceberg
 ruff==0.6.9
     # via -r requirements-dev.in
-sentry-sdk==2.61.1
+sentry-sdk[fastapi]==2.61.1
     # via
     #   -r requirements.in
     #   dome-core
@@ -250,7 +256,6 @@ tqdm==4.67.3
 typing-extensions==4.15.0
     # via
     #   anthropic
-    #   anyio
     #   fastapi
     #   google-genai
     #   limits
@@ -259,7 +264,6 @@ typing-extensions==4.15.0
     #   pydantic
     #   pydantic-core
     #   realtime
-    #   starlette
     #   typing-inspection
 typing-inspection==0.4.2
     # via
@@ -269,7 +273,7 @@ urllib3==2.7.0
     # via
     #   requests
     #   sentry-sdk
-uvicorn==0.48.0
+uvicorn[standard]==0.48.0
     # via -r requirements.in
 uvloop==0.22.1
     # via uvicorn
