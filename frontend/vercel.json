@@ -1,5 +1,5 @@
 {
-  "installCommand": "rm -rf node_modules/@dome-layer/dome-ui && npm install",
+  "installCommand": "rm -rf node_modules .next/cache && npm install",
   "regions": ["fra1"],
   "headers": [
     {
