@@ -7,6 +7,7 @@ from models.request import DeliberationRequest
 from models.response import CouncilMemberResponse, VerdictResponse
 
 _LOW_CONFIDENCE_THRESHOLD = 0.65
+AGENT_ID = "llm-council"
 
 
 def build_governance_event(
@@ -27,7 +28,7 @@ def build_governance_event(
     avg_r1_confidence = sum(r.confidence for r in r1) / len(r1) if r1 else 0.0
 
     return GovernanceEvent(
-        agent_id="dome-llm-council",
+        agent_id=AGENT_ID,
         action_type="deliberation",
         timestamp=datetime.now(timezone.utc),
         input_hash=input_hash,
