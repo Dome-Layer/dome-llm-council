@@ -222,6 +222,7 @@ tqdm==4.67.3
 typing-extensions==4.15.0
     # via
     #   anthropic
+    #   anyio
     #   fastapi
     #   google-genai
     #   limits
@@ -230,6 +231,7 @@ typing-extensions==4.15.0
     #   pydantic
     #   pydantic-core
     #   realtime
+    #   starlette
     #   typing-inspection
 typing-inspection==0.4.2
     # via
