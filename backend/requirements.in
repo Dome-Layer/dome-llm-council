@@ -9,5 +9,5 @@ sse-starlette>=2.1.0
 python-dotenv>=1.0.0
 supabase>=2.31.0
 slowapi>=0.1.9
-structlog>=24.4.0
+structlog>=26.1.0
 sentry-sdk[fastapi]>=2.62.0
