@@ -206,6 +206,60 @@ async def deliberate(request: Request, body: DeliberationRequest) -> EventSource
     return EventSourceResponse(_stream())
 
 
+def _require_service(request: Request) -> None:
+    """Gate service-to-service callers (the P5 agent-flow shim). When
+    AGENT_FLOW_SERVICE_KEY is configured, a matching X-Service-Key header is
+    required; when unset (local dev) the endpoint stays open like /deliberate."""
+    expected = os.getenv("AGENT_FLOW_SERVICE_KEY", "")
+    if expected and request.headers.get("X-Service-Key") != expected:
+        raise HTTPException(status_code=401, detail="Invalid service key")
+
+
+@app.post("/deliberate/sync")
+@limiter.limit("6/minute")
+async def deliberate_sync(request: Request, body: DeliberationRequest) -> dict:
+    """Non-streaming sibling of /deliberate for service callers (n8n via the
+    agent-flow shim). Drains the same deliberation generator and returns the final
+    verdict as JSON, persisting one governance event stamped with the workflow run
+    (X-Workflow-Run-Id) so P6 can group it into the cross-tool timeline."""
+    if _config is None:
+        raise HTTPException(status_code=503, detail="Council not initialised")
+    _require_service(request)
+
+    workflow_run_id = request.headers.get("X-Workflow-Run-Id")
+    user_id = _extract_user_id(_config, request)
+
+    verdict_payload: Optional[dict] = None
+    gov_payload: Optional[dict] = None
+    async for raw in run_deliberation(
+        body,
+        claude=_config.claude,
+        gemini=_config.gemini,
+        openai=_config.openai,
+        synthesizer=_config.synthesizer,
+    ):
+        try:
+            parsed = json.loads(raw)
+        except Exception:
+            continue
+        if parsed.get("type") == "verdict":
+            verdict_payload = parsed
+        elif parsed.get("type") == "governance_event":
+            gov_payload = parsed
+
+    if gov_payload is not None:
+        if workflow_run_id:
+            gov_payload["workflow_run_id"] = workflow_run_id
+        if user_id:
+            gov_payload["user_id"] = user_id
+        _persist_governance_event(_config, gov_payload)
+
+    if verdict_payload is None:
+        raise HTTPException(status_code=502, detail="Deliberation produced no verdict")
+    verdict_payload.pop("type", None)
+    return verdict_payload
+
+
 # ─── Saved deliberations ─────────────────────────────────────────────────────
 
 
