@@ -44,16 +44,16 @@ distro==1.9.0
     #   openai
 docstring-parser==0.18.0
     # via anthropic
-dome-core @ git+https://github.com/Dome-Layer/dome-core.git@b65bcf0548b102c69b5ae45014cb51f09ad99f56
+dome-core @ git+https://github.com/Dome-Layer/dome-core.git@v0.3.0
     # via -r requirements.in
-fastapi==0.136.3
+fastapi==0.141.1
     # via
     #   -r requirements.in
     #   dome-core
     #   sentry-sdk
-google-auth==2.53.0
+google-auth[requests]==2.57.0
     # via google-genai
-google-genai==2.8.0
+google-genai==2.19.0
     # via -r requirements.in
 h11==0.16.0
     # via
@@ -67,7 +67,7 @@ httpcore==1.0.9
     # via httpx
 httptools==0.8.0
     # via uvicorn
-httpx==0.28.1
+httpx[http2]==0.28.1
     # via
     #   anthropic
     #   google-genai
@@ -123,11 +123,11 @@ pydantic==2.13.4
     #   supabase-auth
 pydantic-core==2.46.4
     # via pydantic
-pyjwt==2.13.0
+pyjwt[crypto]==2.13.0
     # via
     #   dome-core
     #   supabase-auth
-python-dotenv==1.2.2
+python-dotenv==1.2.3
     # via
     #   -r requirements.in
     #   uvicorn
@@ -139,18 +139,18 @@ requests==2.34.2
     # via
     #   google-auth
     #   google-genai
-sentry-sdk==2.62.0
+sentry-sdk[fastapi]==2.68.0
     # via
     #   -r requirements.in
     #   dome-core
-slowapi==0.1.9
+slowapi==0.1.10
     # via -r requirements.in
 sniffio==1.3.1
     # via
     #   anthropic
     #   google-genai
     #   openai
-sse-starlette==3.4.4
+sse-starlette==3.4.8
     # via -r requirements.in
 starlette==1.3.1
     # via
@@ -179,7 +179,6 @@ tqdm==4.67.3
 typing-extensions==4.15.0
     # via
     #   anthropic
-    #   anyio
     #   fastapi
     #   google-genai
     #   limits
@@ -187,7 +186,6 @@ typing-extensions==4.15.0
     #   pydantic
     #   pydantic-core
     #   realtime
-    #   starlette
     #   typing-inspection
 typing-inspection==0.4.2
     # via
@@ -197,7 +195,7 @@ urllib3==2.7.0
     # via
     #   requests
     #   sentry-sdk
-uvicorn==0.49.0
+uvicorn[standard]==0.52.4
     # via -r requirements.in
 uvloop==0.22.1
     # via uvicorn
