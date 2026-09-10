@@ -92,6 +92,7 @@ async def _member_call(
             "structured_output_failed member=%s round=%d — falling back to text parsing",
             member_id,
             round_num,
+            exc_info=True,
         )
         text = await provider.generate(prompt, system=role["system"])
         return CouncilMemberResponse(
@@ -130,7 +131,9 @@ async def _verdict_call(
             member_responses=responses,
         )
     except Exception:
-        log.warning("structured_output_failed synthesizer — falling back to text parsing")
+        log.warning(
+            "structured_output_failed synthesizer — falling back to text parsing", exc_info=True
+        )
         verdict_text = await synthesizer.generate(prompt, system=VERDICT_SYSTEM)
         return _parse_verdict_text(question, verdict_text, responses)
 
