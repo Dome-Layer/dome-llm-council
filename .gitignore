@@ -34,3 +34,6 @@ Thumbs.db
 # ─── DOME ────────────────────────────────────────────────────────
 DEMO.md
 TOOL_CONTEXT.md
+
+# Claude Code IDE configs — contain absolute local paths, not for public repos
+.claude/
