@@ -5,8 +5,8 @@
 #
 # Secrets: CLOUDFLARE_API_TOKEN (Workers-only token), CLOUDFLARE_ACCOUNT_ID.
 # Variables on the GitHub environments cloudflare-staging and cloudflare-production:
-# NEXT_PUBLIC_API_URL, NEXT_PUBLIC_SENTRY_ENVIRONMENT (public: they ship in the JavaScript), and
-# SMOKE_URL, the host the smoke test checks (the workers.dev address until the DNS cutover).
+# NEXT_PUBLIC_API_URL, NEXT_PUBLIC_SENTRY_DSN, NEXT_PUBLIC_SENTRY_ENVIRONMENT (public: they ship in
+# the JavaScript), and SMOKE_URL, the host the smoke test checks (the workers.dev address until the DNS cutover).
 
 name: deploy (Cloudflare)
 
@@ -50,9 +50,11 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: 1
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
           NEXT_PUBLIC_SENTRY_ENVIRONMENT: ${{ vars.NEXT_PUBLIC_SENTRY_ENVIRONMENT }}
         run: |
           if [ -z "$NEXT_PUBLIC_API_URL" ]; then echo "::error::NEXT_PUBLIC_API_URL is not set on this environment"; exit 1; fi
+          if [ -z "$NEXT_PUBLIC_SENTRY_DSN" ]; then echo "::warning::NEXT_PUBLIC_SENTRY_DSN is not set on this environment, browser errors will not reach Sentry"; fi
           npm run build
       - name: Deploy
         env:
