@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { headers } from 'next/headers'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import { Header } from './components/Header'
 import { Footer } from './components/Footer'
@@ -34,7 +33,8 @@ export const metadata: Metadata = {
   },
 }
 
-// Inline script runs before first paint — prevents theme flash. Reads cookie
+// Inline script runs before first paint — prevents theme flash. Its CSP nonce is added by the
+// Worker (worker/index.ts) to every <script> in the page, as the HTML is now built ahead of time. Reads cookie
 // first (shared across all *.domelayer.com subdomains), then falls back to localStorage.
 const themeScript = `
 (function() {
@@ -50,13 +50,12 @@ const themeScript = `
 })();
 `
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const nonce = (await headers()).get('x-nonce') ?? undefined
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
-        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans min-h-screen flex flex-col`}>
         <StagingBanner environment={process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT} />
