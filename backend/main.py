@@ -15,7 +15,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 from sse_starlette.sse import EventSourceResponse
 
-from auth import get_current_user
+from auth import get_current_user, optional_user_id
 from config import CouncilConfig, build_council_config
 from council.orchestrator import run_deliberation
 from log_setup import get_logger, setup_logging
@@ -146,31 +146,13 @@ async def health() -> dict:
     return {"status": "ok"}
 
 
-def _extract_user_id(config: CouncilConfig, req: Request) -> Optional[str]:
-    """Extract user_id from the SSO Bearer token if Supabase is configured."""
-    if not config.supabase_url or not config.supabase_service_role_key:
-        return None
-    auth = req.headers.get("Authorization", "")
-    if not auth.startswith("Bearer "):
-        return None
-    token = auth.removeprefix("Bearer ").strip()
-    try:
-        from supabase import create_client
-
-        db = create_client(config.supabase_url, config.supabase_service_role_key)
-        resp = db.auth.get_user(token)
-        return str(resp.user.id) if resp and resp.user else None
-    except Exception:
-        return None
-
-
 @app.post("/deliberate")
 @limiter.limit("6/minute")  # 1 request per 10s per IP
 async def deliberate(request: Request, body: DeliberationRequest) -> EventSourceResponse:
     if _config is None:
         raise HTTPException(status_code=503, detail="Council not initialised")
 
-    user_id = _extract_user_id(_config, request)
+    user_id = optional_user_id(request)
     logger.info(
         "deliberate_request",
         user_id=user_id,
@@ -227,7 +209,7 @@ async def deliberate_sync(request: Request, body: DeliberationRequest) -> dict:
     _require_service(request)
 
     workflow_run_id = request.headers.get("X-Workflow-Run-Id")
-    user_id = _extract_user_id(_config, request)
+    user_id = optional_user_id(request)
 
     verdict_payload: Optional[dict] = None
     gov_payload: Optional[dict] = None
