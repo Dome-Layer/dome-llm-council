@@ -91,7 +91,7 @@ jiter==0.15.0
     #   openai
 limits==5.8.0
     # via slowapi
-multidict==6.7.1
+multidict==6.9.1
     # via yarl
 openai==2.41.1
     # via -r requirements.in
