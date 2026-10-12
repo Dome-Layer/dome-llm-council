@@ -19,7 +19,7 @@
     "lucide-react": "^0.400.0",
     "next": "16.3.8",
     "react": "^18",
-    "react-dom": "^18",
+    "react-dom": "^19",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1"
   },
@@ -27,7 +27,7 @@
     "@cloudflare/workers-types": "^5.20261001.1",
     "@types/node": "^20",
     "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@types/react-dom": "^19",
     "autoprefixer": "^10",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.5",
