@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react'
 
 const INTERESTING_FACTS = [
-  'Claude serves as Strategic Advisor — focused on long-term implications and systemic risks.',
+  'Claude serves as Strategic Advisor, focused on long-term implications and systemic risks.',
   "The Critical Advisor's role is to challenge consensus and surface blind spots.",
   "Gemini's Research Analyst role prioritises data integrity and structured reasoning.",
-  'Round 2 is sequential — each advisor reviews the others\' Round 1 positions before responding.',
+  'Round 2 is sequential: each advisor reviews the others\' Round 1 positions before responding.',
   'Confidence scores are extracted from each model\'s response using a regex pattern.',
   'A confidence score below 0.6 automatically triggers a human-in-loop recommendation.',
   'The governance log records a SHA-256 hash of the input for full auditability.',
@@ -16,7 +16,7 @@ const INTERESTING_FACTS = [
 const ROUND_COPY: Record<1 | 2 | 3, { headline: string; sub: string }> = {
   1: {
     headline: 'The Panel is forming independent positions',
-    sub: 'Each advisor deliberates independently — no cross-examination yet.',
+    sub: 'Each advisor deliberates independently, with no cross-examination yet.',
   },
   2: {
     headline: 'The Panel is conducting cross-examination',

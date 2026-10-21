@@ -343,7 +343,7 @@ function DeliberationRow({
               )}
             </div>
 
-            {/* Modal footer — confidence + date */}
+            {/* Modal footer: confidence + date */}
             <div className="response-modal-footer">
               <p style={{
                 fontSize: "var(--text-caption)",

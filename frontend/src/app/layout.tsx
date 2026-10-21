@@ -21,7 +21,7 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'LLM Council — Dome',
+  title: 'LLM Council | DOME',
   description: 'Governance-driven multi-LLM deliberation by Dome.',
   icons: {
     icon: [
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   },
 }
 
-// Inline script runs before first paint — prevents theme flash. Its CSP nonce is added by the
+// Inline script runs before first paint to prevent a theme flash. Its CSP nonce is added by the
 // Worker (worker/index.ts) to every <script> in the page, as the HTML is now built ahead of time. Reads cookie
 // first (shared across all *.domelayer.com subdomains), then falls back to localStorage.
 const themeScript = `
@@ -46,7 +46,7 @@ const themeScript = `
       ? saved
       : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', theme);
-  } catch (e) { /* SSR or cookie unavailable — theme applied on client hydration */ }
+  } catch (e) { /* SSR or cookie unavailable: theme applied on client hydration */ }
 })();
 `
 
