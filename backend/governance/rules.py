@@ -33,7 +33,7 @@ RULES: dict[str, CouncilRule] = {
         id="R-COUNCIL-03",
         name="Independent synthesizer verdict issued",
         description=(
-            "A dedicated synthesizer model — separate from the three council members — "
+            "A dedicated synthesizer model, separate from the three council members, "
             "produced the final verdict, reasoning, dissent, and recommendation."
         ),
         always_applied=True,

@@ -28,7 +28,7 @@ logger = get_logger(__name__)
 
 
 # Per-IP rate limiter. /deliberate runs up to 7 LLM calls per request, so the
-# default ceiling here is intentionally tight — the audit pegs the cost burn
+# default ceiling here is intentionally tight; the audit pegs the cost burn
 # vector for this endpoint specifically. Per-user tiers (more generous for
 # authenticated users) will land alongside the dome-auth extraction in P1.
 limiter = Limiter(key_func=get_remote_address)
@@ -36,7 +36,7 @@ limiter = Limiter(key_func=get_remote_address)
 
 def _user_token_hash(request: Request) -> Optional[str]:
     """Stable opaque identifier derived from a Bearer token, for log diagnostics
-    only. Not used as a rate-limit key today — see comment on `limiter` above."""
+    only. Not used as a rate-limit key today; see comment on `limiter` above."""
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
         return "user:" + hashlib.sha256(auth[7:].encode()).hexdigest()[:16]
@@ -71,7 +71,7 @@ def _get_db_client(config: CouncilConfig):
 def _persist_governance_event(config: CouncilConfig, event_dict: dict) -> None:
     """Optionally write a governance event to the shared DOME Platform Supabase project.
 
-    Non-fatal — a failure here must never interrupt the SSE stream. The tool
+    Non-fatal: a failure here must never interrupt the SSE stream. The tool
     works without Supabase; persistence is purely for the audit trail.
     """
     db = _get_db_client(config)
@@ -96,7 +96,7 @@ _config: Optional[CouncilConfig] = None
 async def lifespan(app: FastAPI):
     global _config
     _config = build_council_config()
-    logger.info("Council config loaded — synthesiser: %s", type(_config.synthesizer).__name__)
+    logger.info("Council config loaded, synthesiser: %s", type(_config.synthesizer).__name__)
     yield
 
 

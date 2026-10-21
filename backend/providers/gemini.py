@@ -31,7 +31,7 @@ class GeminiProvider(LLMProvider):
                 if model == _FALLBACK_MODEL:
                     raise
                 logger.warning(
-                    "Gemini primary model %s unavailable — trying fallback %s",
+                    "Gemini primary model %s unavailable, trying fallback %s",
                     model,
                     _FALLBACK_MODEL,
                 )
@@ -55,7 +55,7 @@ class GeminiProvider(LLMProvider):
             except ServerError as exc:
                 if attempt < _MAX_RETRIES - 1:
                     logger.warning(
-                        "Gemini %s — attempt %d/%d failed, retrying in %.0fs: %s",
+                        "Gemini %s: attempt %d/%d failed, retrying in %.0fs: %s",
                         model,
                         attempt + 1,
                         _MAX_RETRIES,
@@ -81,7 +81,7 @@ class GeminiProvider(LLMProvider):
                 if model == _FALLBACK_MODEL:
                     raise
                 logger.warning(
-                    "Gemini primary model %s unavailable for structured output — trying fallback %s",
+                    "Gemini primary model %s unavailable for structured output, trying fallback %s",
                     model,
                     _FALLBACK_MODEL,
                 )
@@ -113,7 +113,7 @@ class GeminiProvider(LLMProvider):
             except ServerError as exc:
                 if attempt < _MAX_RETRIES - 1:
                     logger.warning(
-                        "Gemini %s structured — attempt %d/%d failed, retrying in %.0fs: %s",
+                        "Gemini %s structured: attempt %d/%d failed, retrying in %.0fs: %s",
                         model,
                         attempt + 1,
                         _MAX_RETRIES,

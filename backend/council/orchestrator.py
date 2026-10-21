@@ -5,6 +5,7 @@ from typing import AsyncGenerator
 
 from dome_core.sanitize import sanitize_user_text
 
+from council.house_style import strip_dashes
 from council.roles import COUNCIL_ROLES, ROUND_2_SUFFIX, VERDICT_SYSTEM, VERDICT_SYSTEM_STRUCTURED
 from council.schemas import MemberOutput, VerdictOutput
 from council.scoring import parse_confidence, strip_confidence_line
@@ -83,13 +84,13 @@ async def _member_call(
         return CouncilMemberResponse(
             member_id=member_id,
             role=role["name"],
-            response=strip_confidence_line(data["reasoning"]),
+            response=strip_dashes(strip_confidence_line(data["reasoning"])),
             confidence=float(data["confidence"]),
             round=round_num,
         )
     except Exception:
         log.warning(
-            "structured_output_failed member=%s round=%d — falling back to text parsing",
+            "structured_output_failed member=%s round=%d, falling back to text parsing",
             member_id,
             round_num,
             exc_info=True,
@@ -98,7 +99,7 @@ async def _member_call(
         return CouncilMemberResponse(
             member_id=member_id,
             role=role["name"],
-            response=strip_confidence_line(text),
+            response=strip_dashes(strip_confidence_line(text)),
             confidence=parse_confidence(text),
             round=round_num,
         )
@@ -120,19 +121,19 @@ async def _verdict_call(
         dissenting = (
             []
             if data["dissent"].lower() in ("none", "")
-            else [d.strip() for d in data["dissent"].split(",") if d.strip()]
+            else [strip_dashes(d.strip()) for d in data["dissent"].split(",") if d.strip()]
         )
         return VerdictResponse(
             question=question,
-            verdict=data["verdict"],
+            verdict=strip_dashes(data["verdict"]),
             consensus_confidence=float(data["confidence"]),
             dissenting_views=dissenting,
-            recommendation=data["recommendation"],
+            recommendation=strip_dashes(data["recommendation"]),
             member_responses=responses,
         )
     except Exception:
         log.warning(
-            "structured_output_failed synthesizer — falling back to text parsing", exc_info=True
+            "structured_output_failed synthesizer, falling back to text parsing", exc_info=True
         )
         verdict_text = await synthesizer.generate(prompt, system=VERDICT_SYSTEM)
         return _parse_verdict_text(question, verdict_text, responses)
@@ -178,14 +179,14 @@ def _parse_verdict_text(
     dissenting = (
         []
         if parsed["DISSENT"].lower() in ("none", "")
-        else [d.strip() for d in parsed["DISSENT"].split(",") if d.strip()]
+        else [strip_dashes(d.strip()) for d in parsed["DISSENT"].split(",") if d.strip()]
     )
 
     return VerdictResponse(
         question=question,
-        verdict=parsed["VERDICT"] or text[:200],
+        verdict=strip_dashes(parsed["VERDICT"] or text[:200]),
         consensus_confidence=parse_confidence(text),
         dissenting_views=dissenting,
-        recommendation=parsed["RECOMMENDATION"],
+        recommendation=strip_dashes(parsed["RECOMMENDATION"]),
         member_responses=responses,
     )
