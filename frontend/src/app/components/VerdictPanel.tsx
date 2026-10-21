@@ -238,7 +238,7 @@ export default function VerdictPanel({ verdict, governance }: VerdictPanelProps)
                 color: 'var(--color-error)',
               }}
             >
-              {saveError || 'Could not save — please try again.'}
+              {saveError || 'Could not save. Please try again.'}
             </span>
           )}
         </div>
