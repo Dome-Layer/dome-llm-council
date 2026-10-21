@@ -71,7 +71,7 @@ body {
 
 /* ─── DOME component classes ────────────────────────────────────── */
 
-/* Site header — matches Process Analyzer / Data Intelligence */
+/* Site header (matches Process Analyzer / Data Intelligence) */
 .site-header {
   background: rgba(255, 255, 255, 0.90);
   backdrop-filter: blur(8px);
@@ -93,7 +93,7 @@ body {
   border-top-color: #1A1A1A;
 }
 
-/* Focus ring — WCAG 2.1 AA (matches other DOME tools) */
+/* Focus ring: WCAG 2.1 AA (matches other DOME tools) */
 *:focus-visible {
   outline: 2px solid rgba(0, 128, 255, 0.5);
   outline-offset: 2px;
@@ -292,7 +292,7 @@ body {
 .theme-toggle:hover { background: var(--color-bg-muted); color: var(--color-text-primary); }
 .theme-toggle:focus-visible { box-shadow: 0 0 0 3px var(--color-focus-ring); outline: none; }
 
-/* ─── Markdown prose — compact (card preview) ───────────────────── */
+/* ─── Markdown prose: compact (card preview) ─────────────────── */
 .prose-compact {
   font-size: var(--text-body-sm);
   color: var(--color-text-secondary);
@@ -354,7 +354,7 @@ body {
   border-bottom: 0.5px solid var(--color-border-subtle);
 }
 
-/* ─── Markdown prose — full (modal) ─────────────────────────────── */
+/* ─── Markdown prose: full (modal) ───────────────────────────── */
 .prose {
   font-size: var(--text-body);
   color: var(--color-text-secondary);

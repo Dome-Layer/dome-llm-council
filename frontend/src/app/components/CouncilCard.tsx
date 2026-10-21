@@ -164,7 +164,7 @@ export default function CouncilCard({ displayName, role, round1, round2, isActiv
           )}
         </div>
 
-        {/* Response — compact markdown preview, fades out at bottom */}
+        {/* Response: compact markdown preview, fades out at bottom */}
         <div
           className="prose-compact"
           style={{
@@ -276,14 +276,14 @@ export default function CouncilCard({ displayName, role, round1, round2, isActiv
               </div>
             </div>
 
-            {/* Modal body — full prose rendering */}
+            {/* Modal body: full prose rendering */}
             <div className="prose response-modal-body">
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdTableWrapper}>
                 {current.response}
               </ReactMarkdown>
             </div>
 
-            {/* Modal footer — confidence bar */}
+            {/* Modal footer: confidence bar */}
             <div className="response-modal-footer">
               <p
                 style={{

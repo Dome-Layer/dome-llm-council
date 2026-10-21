@@ -1,5 +1,5 @@
 interface ConfidenceBarProps {
-  value: number // 0–1
+  value: number // 0 to 1
 }
 
 export default function ConfidenceBar({ value }: ConfidenceBarProps) {
