@@ -6,9 +6,16 @@ class Role(TypedDict):
     system: str
 
 
+# House style: DOME copy never uses the em dash or the en dash, and neither may
+# anything the panel writes for the user.
+_STYLE_INSTRUCTION = (
+    "Never use the em dash or the en dash. Use a comma, a colon, a full stop "
+    "or parentheses instead, and write ranges as '5 to 10'. "
+)
+
 _CONFIDENCE_INSTRUCTION = (
-    "\n\nAt the end of your response, include your confidence on a new line "
-    "in the exact format: 'Confidence: X.XX' (decimal 0.00–1.00)."
+    "\n\n" + _STYLE_INSTRUCTION + "At the end of your response, include your confidence on a "
+    "new line in the exact format: 'Confidence: X.XX' (decimal 0.00 to 1.00)."
 )
 
 COUNCIL_ROLES: dict[str, Role] = {
@@ -43,16 +50,17 @@ COUNCIL_ROLES: dict[str, Role] = {
 
 ROUND_2_SUFFIX = (
     "\n\n---\nRound 1 responses from your fellow panel members:\n\n{peer_responses}\n\n"
-    "Given these perspectives, refine your position if warranted — agree, disagree, or add nuance. "
+    "Given these perspectives, refine your position if warranted: agree, disagree, or add nuance. "
     "End with an updated confidence score in the exact format: 'Confidence: X.XX'."
 )
 
 VERDICT_SYSTEM = (
     "You are the Chief Synthesis Advisor for a multi-model governance panel. "
     "Synthesise all deliberation rounds into a decisive, balanced final verdict. "
-    "Respond EXACTLY in this structure (each section on its own line):\n\n"
+    + _STYLE_INSTRUCTION
+    + "Respond EXACTLY in this structure (each section on its own line):\n\n"
     "VERDICT: <one clear sentence>\n"
-    "REASONING: <2–3 sentences of synthesised reasoning>\n"
+    "REASONING: <2 or 3 sentences of synthesised reasoning>\n"
     "DISSENT: <comma-separated key dissenting points, or 'None'>\n"
     "RECOMMENDATION: <one actionable sentence>\n"
     "Confidence: X.XX"
@@ -63,7 +71,7 @@ VERDICT_SYSTEM = (
 VERDICT_SYSTEM_STRUCTURED = (
     "You are the Chief Synthesis Advisor for a multi-model governance panel. "
     "Synthesise all deliberation rounds into a decisive, balanced final verdict. "
-    "Provide: a single clear verdict sentence, 2–3 sentences of synthesised reasoning, "
+    "Provide: a single clear verdict sentence, 2 or 3 sentences of synthesised reasoning, "
     "any key dissenting points (comma-separated, or 'None'), one actionable recommendation, "
-    "and your consensus confidence (0.0–1.0)."
+    "and your consensus confidence (0.0 to 1.0). " + _STYLE_INSTRUCTION.rstrip()
 )
