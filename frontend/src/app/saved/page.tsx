@@ -6,15 +6,19 @@ import AuthGuard from "@/components/AuthGuard";
 import { listDeliberations, deleteDeliberation, type DeliberationSummary } from "@/lib/api";
 import type { MemberResponsePayload } from "@/types/sse";
 import ConfidenceBar from "@/app/components/ConfidenceBar";
+import { useIntlLocale, useT } from "@/lib/i18n";
+import type { MemberId } from "@/lib/messages";
 
-const MEMBER_DISPLAY: Record<string, { displayName: string; defaultRole: string }> = {
-  claude: { displayName: "Claude",   defaultRole: "Strategic Advisor" },
-  gemini: { displayName: "Gemini",   defaultRole: "Research Analyst"  },
-  openai: { displayName: "Chat-GPT", defaultRole: "Critical Advisor"  },
+// Model names stay as they are; roles come from the catalogue, in the visitor's language.
+const MEMBER_NAMES: Record<MemberId, string> = {
+  claude: "Claude",
+  gemini: "Gemini",
+  openai: "Chat-GPT",
 };
-const MEMBER_ORDER = ["claude", "gemini", "openai"];
+const MEMBER_ORDER: MemberId[] = ["claude", "gemini", "openai"];
 
 function MemberResponsesSection({ responses }: { responses: MemberResponsePayload[] }) {
+  const t = useT();
   const [activeRounds, setActiveRounds] = useState<Record<string, 1 | 2>>({});
 
   const byMember: Record<string, { r1: MemberResponsePayload | null; r2: MemberResponsePayload | null; role: string }> = {};
@@ -31,7 +35,8 @@ function MemberResponsesSection({ responses }: { responses: MemberResponsePayloa
         const hasBoth = r1 !== null && r2 !== null;
         const activeRound: 1 | 2 = activeRounds[id] ?? (r2 ? 2 : 1);
         const current = activeRound === 2 ? r2 : r1;
-        const display = MEMBER_DISPLAY[id] ?? { displayName: id, defaultRole: role };
+        // A saved deliberation keeps the role in English as the backend sent it; show it in the visitor's language.
+        const displayRole = t.members[id]?.role ?? role;
 
         return (
           <div
@@ -50,9 +55,9 @@ function MemberResponsesSection({ responses }: { responses: MemberResponsePayloa
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
               <div>
                 <p style={{ fontSize: "var(--text-label)", fontWeight: 600, color: "var(--color-text-primary)", margin: 0 }}>
-                  {display.displayName}
+                  {MEMBER_NAMES[id]}
                 </p>
-                <p className="eyebrow" style={{ marginTop: 2 }}>{role}</p>
+                <p className="eyebrow" style={{ marginTop: 2 }}>{displayRole}</p>
               </div>
               {hasBoth && (
                 <div style={{ display: "flex", gap: "4px" }}>
@@ -91,7 +96,7 @@ function MemberResponsesSection({ responses }: { responses: MemberResponsePayloa
                     textTransform: "uppercase",
                     letterSpacing: "0.1em",
                   }}>
-                    Confidence
+                    {t.card.confidence}
                   </p>
                   <ConfidenceBar value={current.confidence} />
                 </div>
@@ -105,6 +110,8 @@ function MemberResponsesSection({ responses }: { responses: MemberResponsePayloa
 }
 
 function ConfidenceBadge({ value }: { value: number }) {
+  const t = useT();
+  const intl = useIntlLocale();
   const pct = Math.round(value * 100);
   const level = pct >= 75 ? "high" : pct >= 50 ? "medium" : "low";
   const colorMap = {
@@ -115,7 +122,7 @@ function ConfidenceBadge({ value }: { value: number }) {
   const s = colorMap[level];
   return (
     <span className="badge" style={{ background: s.background, color: s.color, borderColor: s.border }}>
-      {pct}% consensus
+      {t.library.consensus(new Intl.NumberFormat(intl, { style: "percent" }).format(pct / 100))}
     </span>
   );
 }
@@ -127,6 +134,8 @@ function DeliberationRow({
   item: DeliberationSummary;
   onDelete: (id: string) => void;
 }) {
+  const t = useT();
+  const intl = useIntlLocale();
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -159,7 +168,7 @@ function DeliberationRow({
     }
   }
 
-  const savedAt = new Date(item.saved_at).toLocaleDateString("en-GB", {
+  const savedAt = new Date(item.saved_at).toLocaleDateString(intl, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -207,7 +216,7 @@ function DeliberationRow({
               className="btn btn-neutral"
               style={{ padding: "6px 12px", fontSize: "var(--text-caption)" }}
             >
-              View
+              {t.library.view}
             </button>
 
             {confirmDelete ? (
@@ -218,14 +227,14 @@ function DeliberationRow({
                   className="btn btn-primary"
                   style={{ padding: "6px 12px", fontSize: "var(--text-caption)" }}
                 >
-                  {deleting ? "Deleting…" : "Confirm"}
+                  {deleting ? t.library.deleting : t.library.confirm}
                 </button>
                 <button
                   onClick={() => setConfirmDelete(false)}
                   className="btn btn-neutral"
                   style={{ padding: "6px 12px", fontSize: "var(--text-caption)" }}
                 >
-                  Cancel
+                  {t.library.cancel}
                 </button>
               </>
             ) : (
@@ -234,7 +243,7 @@ function DeliberationRow({
                 className="btn btn-neutral"
                 style={{ padding: "6px 12px", fontSize: "var(--text-caption)" }}
               >
-                Delete
+                {t.library.delete}
               </button>
             )}
           </div>
@@ -260,7 +269,7 @@ function DeliberationRow({
             {/* Modal header */}
             <div className="response-modal-header">
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p className="eyebrow" style={{ marginBottom: 4 }}>Panel verdict</p>
+                <p className="eyebrow" style={{ marginBottom: 4 }}>{t.verdict.eyebrow}</p>
                 <p style={{
                   fontSize: "var(--text-body-sm)",
                   fontWeight: 600,
@@ -276,7 +285,7 @@ function DeliberationRow({
               </div>
               <button
                 onClick={closeModal}
-                aria-label="Close"
+                aria-label={t.card.close}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -309,7 +318,7 @@ function DeliberationRow({
               {item.full_payload?.recommendation && (
                 <div>
                   <p style={{ fontSize: "var(--text-label)", fontWeight: 600, color: "var(--color-text-primary)", margin: "0 0 6px" }}>
-                    Recommendation
+                    {t.verdict.recommendation}
                   </p>
                   <p style={{ fontSize: "var(--text-body-sm)", color: "var(--color-text-secondary)", lineHeight: 1.65, margin: 0 }}>
                     {item.full_payload.recommendation}
@@ -321,7 +330,7 @@ function DeliberationRow({
               {(item.full_payload?.dissenting_views?.length ?? 0) > 0 && (
                 <div>
                   <p style={{ fontSize: "var(--text-label)", fontWeight: 600, color: "var(--color-text-primary)", margin: "0 0 8px" }}>
-                    Dissenting views
+                    {t.verdict.dissent}
                   </p>
                   <ul style={{ margin: 0, paddingLeft: "var(--space-4)", listStyleType: "disc", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
                     {item.full_payload!.dissenting_views.map((view, i) => (
@@ -337,7 +346,7 @@ function DeliberationRow({
               {(item.full_payload?.member_responses?.length ?? 0) > 0 && (
                 <div>
                   <hr style={{ border: "none", borderTop: "0.5px solid var(--color-border-subtle)", margin: "0 0 20px" }} />
-                  <p className="eyebrow" style={{ marginBottom: "16px" }}>Panel members</p>
+                  <p className="eyebrow" style={{ marginBottom: "16px" }}>{t.panel.members}</p>
                   <MemberResponsesSection responses={item.full_payload!.member_responses} />
                 </div>
               )}
@@ -353,11 +362,11 @@ function DeliberationRow({
                 textTransform: "uppercase",
                 letterSpacing: "0.1em",
               }}>
-                Consensus confidence
+                {t.verdict.consensus}
               </p>
               <ConfidenceBar value={item.consensus_confidence} />
               <p style={{ fontSize: "var(--text-caption)", color: "var(--color-text-tertiary)", marginTop: "10px", marginBottom: 0 }}>
-                Saved {savedAt}
+                {t.library.savedOn(savedAt)}
               </p>
             </div>
           </div>
@@ -368,6 +377,7 @@ function DeliberationRow({
 }
 
 export default function SavedPage() {
+  const t = useT();
   const [items, setItems] = useState<DeliberationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -379,9 +389,10 @@ export default function SavedPage() {
         setLoading(false);
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : "Failed to load saved deliberations.");
+        setError(err instanceof Error ? err.message : t.library.loadFailed);
         setLoading(false);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleDelete(id: string) {
@@ -392,7 +403,7 @@ export default function SavedPage() {
     <AuthGuard>
     <div style={{ maxWidth: "800px", margin: "0 auto", padding: "48px 24px" }}>
       <div style={{ marginBottom: "32px" }}>
-        <p className="eyebrow" style={{ marginBottom: "8px" }}>Library</p>
+        <p className="eyebrow" style={{ marginBottom: "8px" }}>{t.library.eyebrow}</p>
         <h1 style={{
           fontSize: "var(--text-h2)",
           fontWeight: 700,
@@ -401,14 +412,14 @@ export default function SavedPage() {
           lineHeight: 1.2,
           margin: 0,
         }}>
-          Saved deliberations
+          {t.library.title}
         </h1>
       </div>
 
       {loading && (
         <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "48px 0" }}>
           <span className="spinner" />
-          <span className="eyebrow">Loading</span>
+          <span className="eyebrow">{t.library.loading}</span>
         </div>
       )}
 
@@ -419,7 +430,7 @@ export default function SavedPage() {
           borderRadius: "var(--radius-md)",
           padding: "16px",
         }}>
-          <p className="eyebrow" style={{ color: "var(--color-error)", marginBottom: "4px" }}>Error</p>
+          <p className="eyebrow" style={{ color: "var(--color-error)", marginBottom: "4px" }}>{t.library.error}</p>
           <p style={{ fontSize: "var(--text-body-sm)", color: "var(--color-text-secondary)" }}>{error}</p>
         </div>
       )}
@@ -433,10 +444,10 @@ export default function SavedPage() {
           textAlign: "center",
         }}>
           <p style={{ fontSize: "var(--text-body-sm)", color: "var(--color-text-secondary)", marginBottom: "16px" }}>
-            No saved deliberations yet. Complete a deliberation and save it to see it here.
+            {t.library.empty}
           </p>
           <Link href="/" style={{ color: "var(--color-accent)", fontSize: "var(--text-body-sm)", textDecoration: "none" }}>
-            ← Back to Council
+            {t.library.back}
           </Link>
         </div>
       )}

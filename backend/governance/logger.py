@@ -45,5 +45,6 @@ def build_governance_event(
             "avg_round1_confidence": round(avg_r1_confidence, 2),
             "verdict_confidence": verdict.consensus_confidence,
             "dissenting_views_count": len(verdict.dissenting_views),
+            "output_language": request.output_language,
         },
     )

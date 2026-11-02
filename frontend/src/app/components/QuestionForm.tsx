@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react'
 import { ArrowRight } from 'lucide-react'
+import { useT } from '@/lib/i18n'
 
 interface QuestionFormProps {
   onSubmit: (question: string) => void
@@ -9,6 +10,7 @@ interface QuestionFormProps {
 }
 
 export default function QuestionForm({ onSubmit, isSubmitting }: QuestionFormProps) {
+  const t = useT()
   const [question, setQuestion] = useState('')
 
   function handleSubmit(e: FormEvent) {
@@ -30,12 +32,12 @@ export default function QuestionForm({ onSubmit, isSubmitting }: QuestionFormPro
         }}
       >
         <label htmlFor="question" className="input-label">
-          Submit a question to the Panel
+          {t.form.label}
         </label>
         <textarea
           id="question"
           className="input"
-          placeholder="Submit any question that benefits from multiple expert perspectives: strategy, risk, investment decisions, operational trade-offs…"
+          placeholder={t.form.placeholder}
           value={question}
           onChange={e => setQuestion(e.target.value)}
           rows={3}
@@ -51,11 +53,11 @@ export default function QuestionForm({ onSubmit, isSubmitting }: QuestionFormPro
             {isSubmitting ? (
               <>
                 <span className="spinner" style={{ width: 14, height: 14, borderWidth: '1.5px' }} />
-                Deliberating
+                {t.form.submitting}
               </>
             ) : (
               <>
-                Deliberate
+                {t.form.submit}
                 <ArrowRight size={16} />
               </>
             )}

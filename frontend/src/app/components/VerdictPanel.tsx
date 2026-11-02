@@ -6,6 +6,7 @@ import ConfidenceBar from './ConfidenceBar'
 import GovernanceBadge from './GovernanceBadge'
 import { useAuth } from '@/context/AuthContext'
 import { saveDeliberation } from '@/lib/api'
+import { useT } from '@/lib/i18n'
 
 interface VerdictPanelProps {
   verdict: VerdictPayload
@@ -15,6 +16,7 @@ interface VerdictPanelProps {
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
 export default function VerdictPanel({ verdict, governance }: VerdictPanelProps) {
+  const t = useT()
   const { isAuthenticated } = useAuth()
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [saveError, setSaveError] = useState('')
@@ -33,7 +35,7 @@ export default function VerdictPanel({ verdict, governance }: VerdictPanelProps)
       })
       setSaveState('saved')
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to save')
+      setSaveError(err instanceof Error ? err.message : t.verdict.saveFailed)
       setSaveState('error')
     }
   }
@@ -51,7 +53,7 @@ export default function VerdictPanel({ verdict, governance }: VerdictPanelProps)
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <p className="eyebrow" style={{ marginBottom: 6 }}>Panel verdict</p>
+          <p className="eyebrow" style={{ marginBottom: 6 }}>{t.verdict.eyebrow}</p>
           <h2
             style={{
               fontSize: 'var(--text-h3)',
@@ -84,7 +86,7 @@ export default function VerdictPanel({ verdict, governance }: VerdictPanelProps)
             margin: '0 0 8px',
           }}
         >
-          Consensus confidence
+          {t.verdict.consensus}
         </p>
         <ConfidenceBar value={verdict.consensus_confidence} />
       </div>
@@ -100,7 +102,7 @@ export default function VerdictPanel({ verdict, governance }: VerdictPanelProps)
               margin: '0 0 6px',
             }}
           >
-            Recommendation
+            {t.verdict.recommendation}
           </p>
           <p
             style={{
@@ -126,7 +128,7 @@ export default function VerdictPanel({ verdict, governance }: VerdictPanelProps)
               margin: '0 0 8px',
             }}
           >
-            Dissenting views
+            {t.verdict.dissent}
           </p>
           <ul
             style={{
@@ -169,10 +171,10 @@ export default function VerdictPanel({ verdict, governance }: VerdictPanelProps)
               margin: 0,
             }}
           >
-            <span style={{ fontWeight: 500 }}>Audit log:</span>{' '}
+            <span style={{ fontWeight: 500 }}>{t.verdict.auditLog}</span>{' '}
             {governance.output_summary}
             {(governance.rules_applied?.length ?? 0) > 0 && (
-              <> &middot; Rules applied: {governance.rules_applied.join(', ')}</>
+              <> &middot; {t.verdict.rulesApplied} {governance.rules_applied.join(', ')}</>
             )}
           </p>
         </div>
@@ -228,7 +230,7 @@ export default function VerdictPanel({ verdict, governance }: VerdictPanelProps)
                 }}
               />
             )}
-            {saveState === 'saved' ? 'Saved' : saveState === 'saving' ? 'Saving…' : 'Save deliberation'}
+            {saveState === 'saved' ? t.verdict.saved : saveState === 'saving' ? t.verdict.saving : t.verdict.save}
           </button>
 
           {saveState === 'error' && (
@@ -238,7 +240,7 @@ export default function VerdictPanel({ verdict, governance }: VerdictPanelProps)
                 color: 'var(--color-error)',
               }}
             >
-              {saveError || 'Could not save. Please try again.'}
+              {saveError || t.verdict.saveError}
             </span>
           )}
         </div>

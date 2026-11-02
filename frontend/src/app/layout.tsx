@@ -4,7 +4,7 @@ import { Header } from './components/Header'
 import { Footer } from './components/Footer'
 import { AuthProvider } from '@/context/AuthContext'
 import { StagingBanner } from '@dome-layer/dome-ui'
-import { THEME_INIT_SCRIPT } from '@dome-layer/dome-ui/utils'
+import { LOCALE_INIT_SCRIPT, THEME_INIT_SCRIPT } from '@dome-layer/dome-ui/utils'
 import './globals.css'
 
 const inter = Inter({
@@ -42,6 +42,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             (worker/index.ts) adds the CSP nonce to every <script>, as the HTML is built ahead of time. */}
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {/* Sets <html lang> to the visitor's language before React (roadmap row 6); the rule lives in dome-ui. */}
+        <script dangerouslySetInnerHTML={{ __html: LOCALE_INIT_SCRIPT }} />
       </head>
       <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans min-h-screen flex flex-col`}>
         <StagingBanner environment={process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT} />

@@ -1,9 +1,16 @@
+'use client'
+
+import { useIntlLocale } from '@/lib/i18n'
+
 interface ConfidenceBarProps {
   value: number // 0 to 1
 }
 
 export default function ConfidenceBar({ value }: ConfidenceBarProps) {
+  const intl = useIntlLocale()
   const pct = `${Math.round(value * 100)}%`
+  // Two decimals in the visitor's own notation (0.75, 0,75).
+  const score = new Intl.NumberFormat(intl, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)
 
   return (
     <div className="flex items-center gap-3">
@@ -32,7 +39,7 @@ export default function ConfidenceBar({ value }: ConfidenceBarProps) {
           flexShrink: 0,
         }}
       >
-        {value.toFixed(2)}
+        {score}
       </span>
     </div>
   )

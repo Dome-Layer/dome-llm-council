@@ -1,32 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-
-const INTERESTING_FACTS = [
-  'Claude serves as Strategic Advisor, focused on long-term implications and systemic risks.',
-  "The Critical Advisor's role is to challenge consensus and surface blind spots.",
-  "Gemini's Research Analyst role prioritises data integrity and structured reasoning.",
-  'Round 2 is sequential: each advisor reviews the others\' Round 1 positions before responding.',
-  'Confidence scores are extracted from each model\'s response using a regex pattern.',
-  'A confidence score below 0.6 automatically triggers a human-in-loop recommendation.',
-  'The governance log records a SHA-256 hash of the input for full auditability.',
-  'The Chief Synthesis Advisor produces the final verdict by weighing all six responses across both rounds.',
-]
-
-const ROUND_COPY: Record<1 | 2 | 3, { headline: string; sub: string }> = {
-  1: {
-    headline: 'The Panel is forming independent positions',
-    sub: 'Each advisor deliberates independently, with no cross-examination yet.',
-  },
-  2: {
-    headline: 'The Panel is conducting cross-examination',
-    sub: 'Advisors are reviewing initial positions and refining their assessments.',
-  },
-  3: {
-    headline: 'Synthesising the verdict',
-    sub: 'Weighing confidence scores, consensus patterns, and dissenting views.',
-  },
-}
+import { useT } from '@/lib/i18n'
 
 interface StatusIndicatorProps {
   message: string
@@ -35,6 +10,8 @@ interface StatusIndicatorProps {
 }
 
 export default function StatusIndicator({ message, phase, round }: StatusIndicatorProps) {
+  const t = useT()
+  const facts = t.status.facts
   const [factIndex, setFactIndex] = useState(0)
   const [factVisible, setFactVisible] = useState(true)
 
@@ -42,19 +19,19 @@ export default function StatusIndicator({ message, phase, round }: StatusIndicat
     const id = setInterval(() => {
       setFactVisible(false)
       setTimeout(() => {
-        setFactIndex(i => (i + 1) % INTERESTING_FACTS.length)
+        setFactIndex(i => (i + 1) % facts.length)
         setFactVisible(true)
       }, 300)
     }, 5000)
     return () => clearInterval(id)
-  }, [])
+  }, [facts.length])
 
-  const narrative = round ? ROUND_COPY[round] : null
+  const narrative = round ? t.status.rounds[round] : null
 
   const headline =
     phase === 'connecting'
-      ? 'Convening the Panel…'
-      : narrative?.headline ?? message ?? 'Deliberating…'
+      ? t.status.convening
+      : narrative?.headline ?? message ?? t.status.deliberating
 
   return (
     <div
@@ -112,7 +89,7 @@ export default function StatusIndicator({ message, phase, round }: StatusIndicat
           fontStyle: 'italic',
         }}
       >
-        {INTERESTING_FACTS[factIndex]}
+        {facts[factIndex]}
       </p>
     </div>
   )

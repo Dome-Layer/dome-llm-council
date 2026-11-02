@@ -6,7 +6,13 @@ from typing import AsyncGenerator
 from dome_core.sanitize import sanitize_user_text
 
 from council.house_style import strip_dashes
-from council.roles import COUNCIL_ROLES, ROUND_2_SUFFIX, VERDICT_SYSTEM, VERDICT_SYSTEM_STRUCTURED
+from council.roles import (
+    COUNCIL_ROLES,
+    ROUND_2_SUFFIX,
+    VERDICT_SYSTEM,
+    VERDICT_SYSTEM_STRUCTURED,
+    output_language_instruction,
+)
 from council.schemas import MemberOutput, VerdictOutput
 from council.scoring import parse_confidence, strip_confidence_line
 from governance.logger import build_governance_event
@@ -28,6 +34,7 @@ async def run_deliberation(
     base_prompt = question
     if context:
         base_prompt = f"Context:\n{context}\n\nQuestion: {question}"
+    language = output_language_instruction(request.output_language)
 
     members = [
         ("claude", claude),
@@ -39,7 +46,9 @@ async def run_deliberation(
     yield _event("status", {"round": 1, "message": "Parallel deliberation started"})
 
     round1: list[CouncilMemberResponse] = list(
-        await asyncio.gather(*[_member_call(mid, prov, base_prompt, 1) for mid, prov in members])
+        await asyncio.gather(
+            *[_member_call(mid, prov, base_prompt + language, 1) for mid, prov in members]
+        )
     )
 
     for r in round1:
@@ -51,7 +60,7 @@ async def run_deliberation(
     round2: list[CouncilMemberResponse] = []
     for member_id, provider in members:
         peers = _format_peers(member_id, round1)
-        prompt_r2 = base_prompt + ROUND_2_SUFFIX.format(peer_responses=peers)
+        prompt_r2 = base_prompt + ROUND_2_SUFFIX.format(peer_responses=peers) + language
         r2 = await _member_call(member_id, provider, prompt_r2, 2)
         round2.append(r2)
         yield _event("member_response", r2.model_dump())
@@ -60,7 +69,7 @@ async def run_deliberation(
     yield _event("status", {"round": 3, "message": "Synthesising verdict"})
 
     all_responses = round1 + round2
-    verdict_prompt = _build_verdict_prompt(question, all_responses)
+    verdict_prompt = _build_verdict_prompt(question, all_responses) + language
     verdict = await _verdict_call(question, synthesizer, verdict_prompt, all_responses)
 
     yield _event("verdict", verdict.model_dump(mode="json"))

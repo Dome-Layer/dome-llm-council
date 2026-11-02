@@ -1,39 +1,39 @@
+'use client'
+
 import { ShieldCheck, ShieldAlert, ShieldX, Shield, type LucideIcon } from 'lucide-react'
 import type { HumanInLoop } from '@/types/sse'
+import { useT } from '@/lib/i18n'
 
 interface GovernanceBadgeProps {
   humanInLoop: HumanInLoop
 }
 
 const CONFIG: Record<HumanInLoop, {
-  label: string
   badgeClass: string
   Icon: LucideIcon
 }> = {
   not_required: {
-    label: 'Autonomous',
     badgeClass: 'badge badge-success',
     Icon: ShieldCheck,
   },
   recommended: {
-    label: 'Review recommended',
     badgeClass: 'badge badge-warning',
     Icon: ShieldAlert,
   },
   required: {
-    label: 'Human required',
     badgeClass: 'badge badge-error',
     Icon: ShieldX,
   },
   completed: {
-    label: 'Human reviewed',
     badgeClass: 'badge badge-success',
     Icon: ShieldCheck,
   },
 }
 
 export default function GovernanceBadge({ humanInLoop }: GovernanceBadgeProps) {
-  const { label, badgeClass, Icon } = CONFIG[humanInLoop]
+  const t = useT()
+  const { badgeClass, Icon } = CONFIG[humanInLoop]
+  const label = t.governance[humanInLoop]
 
   return (
     <span className={badgeClass} style={{ gap: 5 }}>
