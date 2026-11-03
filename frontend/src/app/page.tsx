@@ -7,16 +7,19 @@ import CouncilCard from './components/CouncilCard'
 import VerdictPanel from './components/VerdictPanel'
 import StatusIndicator from './components/StatusIndicator'
 import AuthGuard from '@/components/AuthGuard'
+import { useLocale, type Locale } from '@dome-layer/dome-ui'
+import { useT } from '@/lib/i18n'
 
 // ─── Member config ────────────────────────────────────────────────
 
 const MEMBER_ORDER = ['claude', 'gemini', 'openai'] as const
 type MemberId = typeof MEMBER_ORDER[number]
 
-const MEMBER_DISPLAY: Record<MemberId, { displayName: string; defaultRole: string }> = {
-  claude: { displayName: 'Claude',  defaultRole: 'Strategic Advisor' },
-  gemini: { displayName: 'Gemini',  defaultRole: 'Research Analyst' },
-  openai: { displayName: 'Chat-GPT', defaultRole: 'Critical Advisor' },
+// Model names stay as they are; each member's role comes from the catalogue, in the visitor's language.
+const MEMBER_NAMES: Record<MemberId, string> = {
+  claude: 'Claude',
+  gemini: 'Gemini',
+  openai: 'Chat-GPT',
 }
 
 // ─── State types ──────────────────────────────────────────────────
@@ -27,7 +30,6 @@ interface RoundData {
 }
 
 interface MemberState {
-  role: string
   round1: RoundData | null
   round2: RoundData | null
 }
@@ -39,9 +41,9 @@ type StatusRound = 1 | 2 | 3 | null
 
 function getInitialMembers(): MembersState {
   return {
-    claude: { role: MEMBER_DISPLAY.claude.defaultRole, round1: null, round2: null },
-    gemini: { role: MEMBER_DISPLAY.gemini.defaultRole, round1: null, round2: null },
-    openai: { role: MEMBER_DISPLAY.openai.defaultRole, round1: null, round2: null },
+    claude: { round1: null, round2: null },
+    gemini: { round1: null, round2: null },
+    openai: { round1: null, round2: null },
   }
 }
 
@@ -61,6 +63,7 @@ function getSSOAuthHeader(): Record<string, string> {
 
 async function streamDeliberation(
   question: string,
+  outputLanguage: Locale,
   onEvent: (event: SSEEvent) => void,
 ): Promise<void> {
   const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
@@ -68,7 +71,8 @@ async function streamDeliberation(
   const response = await fetch(`${apiUrl}/deliberate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getSSOAuthHeader() },
-    body: JSON.stringify({ question, context: '', user_id: null }),
+    // The panel writes in the language the visitor reads (roadmap row 6).
+    body: JSON.stringify({ question, context: '', user_id: null, output_language: outputLanguage }),
   })
 
   if (!response.ok) {
@@ -119,6 +123,8 @@ async function streamDeliberation(
 // ─── Page ─────────────────────────────────────────────────────────
 
 export default function Page() {
+  const t = useT()
+  const locale = useLocale()
   const [phase, setPhase] = useState<Phase>('idle')
   const [statusMessage, setStatusMessage] = useState('')
   const [statusRound, setStatusRound] = useState<StatusRound>(null)
@@ -141,7 +147,7 @@ export default function Page() {
     setErrorMessage('')
 
     try {
-      await streamDeliberation(question, (event) => {
+      await streamDeliberation(question, locale, (event) => {
         switch (event.type) {
           case 'status':
             setPhase('deliberating')
@@ -150,12 +156,11 @@ export default function Page() {
             break
 
           case 'member_response': {
-            const { member_id, role, response, confidence, round } = event
+            const { member_id, response, confidence, round } = event
             if (!isMemberId(member_id)) break
             setMembers(prev => ({
               ...prev,
               [member_id]: {
-                role,
                 round1: round === 1 ? { response, confidence } : prev[member_id].round1,
                 round2: round === 2 ? { response, confidence } : prev[member_id].round2,
               },
@@ -205,7 +210,7 @@ export default function Page() {
       // Stream ended without explicit done event
       setPhase(prev => (prev === 'deliberating' || prev === 'connecting') ? 'complete' : prev)
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : 'Connection failed')
+      setErrorMessage(err instanceof Error ? err.message : t.errors.connection)
       setPhase('error')
     }
   }
@@ -227,7 +232,7 @@ export default function Page() {
     >
         {/* Page title */}
         <div style={{ marginBottom: 'var(--space-2)' }}>
-          <p className="eyebrow" style={{ marginBottom: 12 }}>Multi-model deliberation</p>
+          <p className="eyebrow" style={{ marginBottom: 12 }}>{t.page.eyebrow}</p>
           <h1
             style={{
               fontSize: 'var(--text-h1)',
@@ -238,7 +243,7 @@ export default function Page() {
               lineHeight: 1.2,
             }}
           >
-            Ask the Panel
+            {t.page.title}
           </h1>
           <p
             style={{
@@ -250,7 +255,7 @@ export default function Page() {
               lineHeight: 1.625,
             }}
           >
-            Three AI advisors deliberate independently, then cross-examine each other producing a governed verdict with a confidence score and full audit trail.
+            {t.page.lead}
           </p>
         </div>
 
@@ -274,7 +279,7 @@ export default function Page() {
               color: 'var(--color-error)',
             }}
           >
-            {errorMessage || 'Something went wrong. Please try again.'}
+            {errorMessage || t.errors.generic}
           </div>
         )}
 
@@ -282,7 +287,7 @@ export default function Page() {
         {showCards && (
           <section>
             <p className="eyebrow" style={{ marginBottom: 16 }}>
-              {hasAnyResponse ? 'Panel members' : 'Convening the Panel…'}
+              {hasAnyResponse ? t.panel.members : t.panel.convening}
             </p>
             <div
               style={{
@@ -294,8 +299,9 @@ export default function Page() {
               {MEMBER_ORDER.map(id => (
                 <CouncilCard
                   key={id}
-                  displayName={MEMBER_DISPLAY[id].displayName}
-                  role={members[id].role}
+                  memberId={id}
+                  displayName={MEMBER_NAMES[id]}
+                  role={t.members[id].role}
                   round1={members[id].round1}
                   round2={members[id].round2}
                   isActive={isSubmitting}

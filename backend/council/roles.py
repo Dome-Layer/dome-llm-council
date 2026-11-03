@@ -54,6 +54,27 @@ ROUND_2_SUFFIX = (
     "End with an updated confidence score in the exact format: 'Confidence: X.XX'."
 )
 
+OUTPUT_LANGUAGE_NAMES = {"it": "Italian", "nl": "Dutch", "de": "German"}
+
+
+def output_language_instruction(language: str) -> str:
+    """The instruction that makes the panel and the verdict follow the interface language (roadmap row 6).
+
+    Empty for English, so English deliberations send exactly the prompts they always did.
+    """
+    name = OUTPUT_LANGUAGE_NAMES.get(language)
+    if name is None:
+        return ""
+    return (
+        f"\n\nOUTPUT LANGUAGE: write your whole answer in {name}, as a native {name} speaker "
+        "would, with the language's own letters and accents (never spelled out in plain ASCII). "
+        "Keep these exactly as specified, in English: the line 'Confidence: X.XX', the section "
+        "labels VERDICT, REASONING, DISSENT and RECOMMENDATION when you are asked for them, and "
+        "the word 'None' when there is no dissent. Keep product, company and regulation names "
+        "as they are."
+    )
+
+
 VERDICT_SYSTEM = (
     "You are the Chief Synthesis Advisor for a multi-model governance panel. "
     "Synthesise all deliberation rounds into a decisive, balanced final verdict. "

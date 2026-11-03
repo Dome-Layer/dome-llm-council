@@ -5,6 +5,8 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
 import ConfidenceBar from './ConfidenceBar'
+import { useT } from '@/lib/i18n'
+import type { MemberId } from '@/lib/messages'
 
 interface RoundData {
   response: string
@@ -12,17 +14,12 @@ interface RoundData {
 }
 
 interface CouncilCardProps {
+  memberId: MemberId
   displayName: string
   role: string
   round1: RoundData | null
   round2: RoundData | null
   isActive: boolean
-}
-
-const THINKING_MESSAGES: Record<string, string> = {
-  'Claude':  'The Strategic Advisor is weighing long-term implications…',
-  'Gemini':  'The Research Analyst is structuring the evidence…',
-  'Chat-GPT':  'The Critical Advisor is stress-testing assumptions…',
 }
 
 const RESPONSE_MAX_HEIGHT = 200
@@ -36,7 +33,9 @@ const mdTableWrapper: Components = {
   ),
 }
 
-export default function CouncilCard({ displayName, role, round1, round2, isActive }: CouncilCardProps) {
+export default function CouncilCard({ memberId, displayName, role, round1, round2, isActive }: CouncilCardProps) {
+  const t = useT()
+  const thinking = t.members[memberId].thinking
   const [activeRound, setActiveRound] = useState<1 | 2>(2)
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -92,7 +91,7 @@ export default function CouncilCard({ displayName, role, round1, round2, isActiv
 
         {isActive && (
           <>
-            {THINKING_MESSAGES[displayName] && (
+            {thinking && (
               <p
                 style={{
                   fontSize: 'var(--text-body-sm)',
@@ -101,7 +100,7 @@ export default function CouncilCard({ displayName, role, round1, round2, isActiv
                   margin: 0,
                 }}
               >
-                {THINKING_MESSAGES[displayName]}
+                {thinking}
               </p>
             )}
             <div className="flex flex-col gap-2" style={{ flex: 1 }}>
@@ -159,7 +158,7 @@ export default function CouncilCard({ displayName, role, round1, round2, isActiv
             </div>
           ) : (
             <span className={displayRound === 2 ? 'badge badge-accent' : 'badge badge-neutral'}>
-              Round {displayRound}
+              {t.card.round(displayRound ?? 1)}
             </span>
           )}
         </div>
@@ -194,7 +193,7 @@ export default function CouncilCard({ displayName, role, round1, round2, isActiv
             letterSpacing: '0.02em',
           }}
         >
-          Read full response ↗
+          {t.card.readFull}
         </button>
 
         {/* Confidence */}
@@ -209,7 +208,7 @@ export default function CouncilCard({ displayName, role, round1, round2, isActiv
               letterSpacing: '0.1em',
             }}
           >
-            Confidence
+            {t.card.confidence}
           </p>
           <ConfidenceBar value={current.confidence} key={`${displayRound}-${current.confidence}`} />
         </div>
@@ -254,7 +253,7 @@ export default function CouncilCard({ displayName, role, round1, round2, isActiv
                 )}
                 <button
                   onClick={closeModal}
-                  aria-label="Close"
+                  aria-label={t.card.close}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -295,7 +294,7 @@ export default function CouncilCard({ displayName, role, round1, round2, isActiv
                   letterSpacing: '0.1em',
                 }}
               >
-                Confidence
+                {t.card.confidence}
               </p>
               <ConfidenceBar
                 value={current.confidence}
