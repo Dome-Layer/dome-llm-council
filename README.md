@@ -70,6 +70,7 @@ Copy `backend/.env.example` and fill in real values. Never commit the `.env` fil
 | `ANTHROPIC_API_KEY` | ✅ | Anthropic API key — used for Claude (Strategic Advisor) and the default synthesizer |
 | `GOOGLE_AI_API_KEY` | ✅ | Google AI Studio key — used for Gemini (Research Analyst) |
 | `OPENAI_API_KEY` | ✅ | OpenAI API key — used for GPT-4o (Critical Advisor) |
+| `GEMINI_MODEL` | optional | Model for the Gemini council member. Default: `gemini-3.8-flash`. On server errors the provider falls back to `gemini-3.5-flash-lite` |
 | `SYNTHESIZER_MODEL` | optional | Model that writes the final verdict. Default: `claude-opus-4-6`. Prefix determines provider: `claude` → Anthropic, `gemini` → Google, anything else → OpenAI |
 | `SUPABASE_URL` | optional | Supabase project URL. If absent, governance persistence and auth are disabled and the tool runs stateless |
 | `SUPABASE_SERVICE_ROLE_KEY` | optional | Supabase service role key used for auth verification and DB writes. Required when `SUPABASE_URL` is set |
@@ -136,7 +137,7 @@ dome-llm-council/
 │   └── providers/
 │       ├── base.py              LLMProvider abstract base class
 │       ├── claude.py            Anthropic provider (claude-sonnet-4-6 default)
-│       ├── gemini.py            Google GenAI provider (gemini-2.5-flash, retry + fallback)
+│       ├── gemini.py            Google GenAI provider (gemini-3.8-flash, retry + fallback)
 │       └── openai.py            OpenAI provider (gpt-4o default)
 └── frontend/
     ├── package.json
