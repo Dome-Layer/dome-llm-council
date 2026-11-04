@@ -15,11 +15,11 @@ logger = logging.getLogger(__name__)
 _TIMEOUT_MS = 60_000
 _MAX_RETRIES = 3
 _BASE_DELAY = 2.0  # seconds; doubles on each attempt
-_FALLBACK_MODEL = "gemini-2.5-flash-lite"
+_FALLBACK_MODEL = "gemini-3.5-flash-lite"
 
 
 class GeminiProvider(LLMProvider):
-    def __init__(self, api_key: str, model: str = "gemini-2.5-flash") -> None:
+    def __init__(self, api_key: str, model: str = "gemini-3.8-flash") -> None:
         self._client = genai.Client(api_key=api_key)
         self._model = model
 
